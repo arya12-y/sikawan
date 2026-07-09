@@ -23,7 +23,7 @@ class UserController extends CrudController
 
     protected function validationRules(?Model $model = null): array
     {
-        return ['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', Rule::unique('users')->ignore($model?->id)], 'password' => [$model ? 'nullable' : 'required', 'string', 'min:8'], 'nip' => ['nullable', 'string'], 'phone' => ['nullable', 'string'], 'address' => ['nullable', 'string'], 'photo' => ['nullable', 'string'], 'is_active' => ['boolean'], 'roles' => ['array'], 'roles.*' => ['string']];
+        return ['name' => [$model ? 'sometimes' : 'required', 'string', 'max:255'], 'email' => [$model ? 'sometimes' : 'required', 'email', Rule::unique('users')->ignore($model?->id)], 'password' => [$model ? 'nullable' : 'required', 'string', 'min:8'], 'nip' => ['nullable', 'string'], 'phone' => ['nullable', 'string'], 'address' => ['nullable', 'string'], 'photo' => ['nullable', 'string'], 'is_active' => ['sometimes', 'boolean'], 'roles' => ['array'], 'roles.*' => ['string']];
     }
 
     public function store(Request $request)
@@ -41,6 +41,10 @@ class UserController extends CrudController
 
     public function update(Request $request, $id)
     {
+        if ($request->hasAny(['is_active', 'roles']) && ! $request->user()?->hasAnyRole(['Super Admin', 'Admin Diskominfo'])) {
+            abort(403, 'Anda tidak memiliki akses untuk mengubah status atau role pengguna');
+        }
+
         $user = User::findOrFail($id);
         $old = $user->toArray();
         $data = Validator::make($request->all(), $this->validationRules($user))->validate();

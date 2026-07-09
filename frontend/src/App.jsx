@@ -7,6 +7,7 @@ import BankSoal from './Pages/BankSoal/BankSoal'
 import ForgotPassword from './Pages/Auth/ForgotPassword'
 import Login from './Pages/Auth/Login'
 import Profile from './Pages/Auth/Profile'
+import Register from './Pages/Auth/Register'
 import ResetPassword from './Pages/Auth/ResetPassword'
 import Dashboard from './Pages/Dashboard/Dashboard'
 import Laporan from './Pages/Laporan/Laporan'
@@ -56,6 +57,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute />}>

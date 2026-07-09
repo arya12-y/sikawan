@@ -12,11 +12,11 @@ class AuditLogService
             'user_id' => auth()->id(),
             'action' => $action,
             'module' => $module,
-            'description' => $description,
+            'description' => is_array($description) ? json_encode($description) : $description,
             'ip_address' => request()?->ip(),
             'user_agent' => request()?->userAgent(),
-            'old_data' => $oldData,
-            'new_data' => $newData,
+            'old_data' => is_array($oldData) ? json_encode($oldData) : $oldData,
+            'new_data' => is_array($newData) ? json_encode($newData) : $newData,
         ]);
     }
 }
