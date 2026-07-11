@@ -1,13 +1,13 @@
 FROM php:8.3-fpm
 
-# Install sistem dependensi
+# 1. Install sistem dependensi (termasuk Node.js untuk build React)
 RUN apt-get update && apt-get install -y \
     libpng-dev libjpeg-dev libfreetype6-dev libzip-dev \
-    zip unzip nginx git \
+    zip unzip nginx git nodejs npm \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd zip pdo_mysql
 
-# Konfigurasi Nginx
+# 2. Konfigurasi Nginx untuk Laravel
 RUN echo 'server {\n\
     listen 80;\n\
     index index.php index.html;\n\
@@ -23,18 +23,21 @@ RUN echo 'server {\n\
     }\n\
 }' > /etc/nginx/sites-available/default
 
+# 3. Setup Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 4. Salin kode project
 COPY . /var/www/html
 WORKDIR /var/www/html
 
-# Izin folder (Sangat Penting)
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# 5. Build Aset (Composer + NPM) & Permission
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs \
+    && npm install \
+    && npm run build
 
-# Install dependensi (Tanpa hapus vendor agar file tidak hilang)
-RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+# 6. Cache Artisan agar aplikasi cepat
+RUN php artisan config:cache && php artisan route:cache
 
-# Jalankan command persiapan
-RUN php artisan config:clear && php artisan cache:clear
-
-# Jalankan Nginx dan PHP-FPM
+# 7. Start Nginx & PHP-FPM
 CMD service nginx start && php-fpm
