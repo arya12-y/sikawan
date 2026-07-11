@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Asesmen;
 use App\Models\Badge;
+use App\Models\BankSoal;
 use App\Models\Bidang;
 use App\Models\Jabatan;
 use App\Models\Kategori;
@@ -50,18 +52,29 @@ class MasterDataSeeder extends Seeder
             );
         }
 
-        foreach (['Tata Kelola Data', 'Metadata Statistik', 'Interoperabilitas Data', 'Keamanan Informasi', 'Analisis Data', 'Visualisasi Data', 'Kualitas Data', 'Integrasi Sistem'] as $index => $kompetensiName) {
+        $kompetensis = [
+            ['nama' => 'Satu Data Indonesia', 'domain' => 'Perpres 39/2019, Prinsip SDI, Walidata, Produsen Data, Forum SDI'],
+            ['nama' => 'Statistik Sektoral', 'domain' => 'Konsep statistik, data sektoral, data spasial, data administrasi'],
+            ['nama' => 'Metadata', 'domain' => 'Metadata statistik, indikator, variabel, kegiatan'],
+            ['nama' => 'Standar Data', 'domain' => 'Kode referensi, interoperabilitas, standar data'],
+            ['nama' => 'Kualitas Data', 'domain' => 'Validitas, konsistensi, akurasi, kelengkapan'],
+            ['nama' => 'EPSS', 'domain' => 'Domain, aspek, indikator, evidence'],
+            ['nama' => 'Open Data', 'domain' => 'API, CKAN, Open Data'],
+            ['nama' => 'Pengelolaan Data', 'domain' => 'SIPD, daftar data, validasi, verifikasi'],
+        ];
+
+        foreach ($kompetensis as $index => $kompetensi) {
             Kompetensi::updateOrCreate(
                 ['kode' => 'KMP'.str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT)],
-                ['nama' => $kompetensiName, 'domain' => 'Kompetensi Data', 'is_active' => true]
+                ['nama' => $kompetensi['nama'], 'domain' => $kompetensi['domain'], 'is_active' => true]
             );
         }
 
         $levels = [
-            ['nama' => 'Pemula', 'kode' => 'pemula', 'urutan' => 1, 'nilai_min' => 0, 'nilai_max' => 39, 'warna' => '#ef4444'],
-            ['nama' => 'Dasar', 'kode' => 'dasar', 'urutan' => 2, 'nilai_min' => 40, 'nilai_max' => 59, 'warna' => '#f97316'],
-            ['nama' => 'Terampil', 'kode' => 'terampil', 'urutan' => 3, 'nilai_min' => 60, 'nilai_max' => 74, 'warna' => '#eab308'],
-            ['nama' => 'Mahir', 'kode' => 'mahir', 'urutan' => 4, 'nilai_min' => 75, 'nilai_max' => 89, 'warna' => '#22c55e'],
+            ['nama' => 'Pemula', 'kode' => 'pemula', 'urutan' => 1, 'nilai_min' => 0, 'nilai_max' => 59, 'warna' => '#ef4444'],
+            ['nama' => 'Dasar', 'kode' => 'dasar', 'urutan' => 2, 'nilai_min' => 60, 'nilai_max' => 69, 'warna' => '#f97316'],
+            ['nama' => 'Terampil', 'kode' => 'terampil', 'urutan' => 3, 'nilai_min' => 70, 'nilai_max' => 79, 'warna' => '#eab308'],
+            ['nama' => 'Mahir', 'kode' => 'mahir', 'urutan' => 4, 'nilai_min' => 80, 'nilai_max' => 89, 'warna' => '#22c55e'],
             ['nama' => 'Ahli', 'kode' => 'ahli', 'urutan' => 5, 'nilai_min' => 90, 'nilai_max' => 100, 'warna' => '#3b82f6'],
         ];
 
@@ -110,11 +123,81 @@ class MasterDataSeeder extends Seeder
                 ['user_id' => $pengujiUser->id],
                 [
                     'nip' => '197501012005011001',
-                    'bidang_keahlian' => 'Tata Kelola Data',
+                    'bidang_keahlian' => 'Satu Data Indonesia',
                     'bio' => 'Penguji kompetensi walidata',
                     'is_active' => true,
                 ]
             );
+        }
+
+        $kompetensi = Kompetensi::where('kode', 'KMP001')->first();
+        $levelDasar = Level::where('kode', 'dasar')->first();
+
+        if ($kompetensi && $levelDasar) {
+            $questions = [
+                [
+                    'pertanyaan' => 'Apa tujuan utama Satu Data Indonesia?',
+                    'pilihan' => ['Menyatukan prinsip tata kelola data pemerintah', 'Menghapus seluruh data OPD', 'Mengganti seluruh aplikasi daerah', 'Membatasi publikasi data'],
+                    'jawaban_benar' => 'Menyatukan prinsip tata kelola data pemerintah',
+                ],
+                [
+                    'pertanyaan' => 'Siapa yang berperan mendukung pengelolaan data pada OPD?',
+                    'pilihan' => ['Walidata Pendukung', 'Operator sekolah', 'Bendahara', 'Arsiparis umum'],
+                    'jawaban_benar' => 'Walidata Pendukung',
+                ],
+                [
+                    'pertanyaan' => 'Salah satu prinsip Satu Data Indonesia adalah?',
+                    'pilihan' => ['Memenuhi standar data', 'Data tidak perlu metadata', 'Data hanya disimpan lokal', 'Data tidak perlu dibagi-pakaikan'],
+                    'jawaban_benar' => 'Memenuhi standar data',
+                ],
+                [
+                    'pertanyaan' => 'Metadata digunakan untuk?',
+                    'pilihan' => ['Menjelaskan definisi dan struktur data', 'Menghapus data lama', 'Mengubah password akun', 'Membuat sertifikat otomatis'],
+                    'jawaban_benar' => 'Menjelaskan definisi dan struktur data',
+                ],
+                [
+                    'pertanyaan' => 'Forum Satu Data Indonesia berfungsi sebagai?',
+                    'pilihan' => ['Wadah koordinasi penyelenggaraan data', 'Tempat ujian pegawai', 'Aplikasi absensi', 'Sistem keuangan'],
+                    'jawaban_benar' => 'Wadah koordinasi penyelenggaraan data',
+                ],
+            ];
+
+            $soalIds = collect($questions)->map(function (array $question) use ($kompetensi, $levelDasar, $walidataUser) {
+                $soal = BankSoal::updateOrCreate(
+                    ['pertanyaan' => $question['pertanyaan']],
+                    [
+                        'kompetensi_id' => $kompetensi->id,
+                        'level_id' => $levelDasar->id,
+                        'jenis' => 'pilihan_ganda',
+                        'pilihan' => json_encode($question['pilihan']),
+                        'jawaban_benar' => $question['jawaban_benar'],
+                        'pembahasan' => 'Jawaban mengacu pada konsep dasar Satu Data Indonesia.',
+                        'bobot' => 1,
+                        'is_active' => true,
+                        'created_by' => $walidataUser?->id,
+                    ]
+                );
+
+                return $soal->id;
+            });
+
+            $asesmen = Asesmen::updateOrCreate(
+                ['judul' => 'Simulasi Asesmen Satu Data Indonesia'],
+                [
+                    'deskripsi' => 'Asesmen demo untuk simulasi Walidata sampai mendapatkan sertifikat.',
+                    'kompetensi_id' => $kompetensi->id,
+                    'level_id' => $levelDasar->id,
+                    'jumlah_soal' => 5,
+                    'durasi' => 15,
+                    'nilai_lulus' => 60,
+                    'acak_soal' => true,
+                    'acak_jawaban' => true,
+                    'status' => 'published',
+                    'created_by' => $pengujiUser?->id,
+                ]
+            );
+
+            $asesmen->bankSoals()->sync($soalIds->mapWithKeys(fn ($soalId, $index) => [$soalId => ['urutan' => $index + 1]])->all());
         }
     }
 }

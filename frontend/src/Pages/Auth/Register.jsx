@@ -41,7 +41,7 @@ function Register() {
       await api.post('/register', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      navigate('/login', { replace: true })
+      navigate('/login', { replace: true, state: { notice: 'Pendaftaran berhasil dikirim. Akun Anda menunggu verifikasi SK dan persetujuan Admin Diskominfo sebelum dapat digunakan.' } })
     } catch (error) {
       const validationErrors = error.response?.data?.errors
       const messages = validationErrors ? Object.values(validationErrors).flat() : [error.response?.data?.message || 'Pendaftaran gagal diproses']

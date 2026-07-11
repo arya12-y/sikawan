@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../hooks/useAuth'
+import { canAccessPath, firstAllowedPath } from '../../utils/access'
 
 function Login() {
   const navigate = useNavigate()
@@ -9,15 +10,17 @@ function Login() {
   const { login } = useAuth()
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm()
   const [showPassword, setShowPassword] = useState(false)
-  const [loginNote, setLoginNote] = useState(null)
+  const [loginNote, setLoginNote] = useState(location.state?.notice ? { type: 'success', message: location.state.notice } : null)
 
   const onSubmit = async (data) => {
     setLoginNote(null)
 
     try {
       const response = await login(data)
-      setLoginNote({ type: 'success', message: response.message || 'Login berhasil. Mengalihkan ke dashboard...' })
-      setTimeout(() => navigate(location.state?.from?.pathname || '/', { replace: true }), 650)
+      setLoginNote({ type: 'success', message: response.message || 'Login berhasil. Mengalihkan...' })
+      const requestedPath = location.state?.from?.pathname
+      const destination = requestedPath && canAccessPath(response.user, requestedPath) ? requestedPath : firstAllowedPath(response.user)
+      setTimeout(() => navigate(destination, { replace: true }), 650)
     } catch (error) {
       setLoginNote({ type: 'danger', message: error.response?.data?.message || 'Login gagal. Periksa kembali email dan password Anda.' })
     }

@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Asesmen;
+use App\Models\BankSoal;
 use App\Models\JawabanPeserta;
 use App\Models\PesertaAsesmen;
+use App\Models\Sertifikat;
 use App\Services\AssessmentService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class AsesmenController extends CrudController
@@ -54,9 +57,24 @@ class AsesmenController extends CrudController
         abort_if($asesmen->tanggal_mulai && now()->lt($asesmen->tanggal_mulai), 422, 'Asesmen belum dimulai');
         abort_if($asesmen->tanggal_selesai && now()->gt($asesmen->tanggal_selesai), 422, 'Asesmen sudah selesai');
 
-        $peserta = PesertaAsesmen::firstOrCreate(['asesmen_id' => $asesmen->id, 'user_id' => $request->user()->id], ['waktu_mulai' => now(), 'status' => 'sedang_mengerjakan']);
+        if ($asesmen->bankSoals()->count() === 0) {
+            $soals = BankSoal::query()
+                ->where('kompetensi_id', $asesmen->kompetensi_id)
+                ->when($asesmen->level_id, fn ($query) => $query->where('level_id', $asesmen->level_id))
+                ->where('is_active', true)
+                ->when($asesmen->acak_soal, fn ($query) => $query->inRandomOrder(), fn ($query) => $query->orderBy('id'))
+                ->limit($asesmen->jumlah_soal)
+                ->pluck('id');
 
-        return response()->json($peserta->load('asesmen.bankSoals'));
+            abort_if($soals->isEmpty(), 422, 'Bank soal belum tersedia untuk asesmen ini');
+
+            $asesmen->bankSoals()->sync($soals->mapWithKeys(fn ($soalId, $i) => [$soalId => ['urutan' => $i + 1]])->all());
+        }
+
+        $peserta = PesertaAsesmen::firstOrCreate(['asesmen_id' => $asesmen->id, 'user_id' => $request->user()->id], ['waktu_mulai' => now(), 'status' => 'sedang_mengerjakan']);
+        $peserta->load(['asesmen.bankSoals' => fn ($query) => $asesmen->acak_soal ? $query->inRandomOrder() : $query->orderBy('asesmen_soals.urutan'), 'jawabanPesertas']);
+
+        return response()->json($peserta);
     }
 
     public function saveAnswer(Request $request, AssessmentService $service, $pesertaId)
@@ -80,6 +98,23 @@ class AsesmenController extends CrudController
             abort_unless($peserta->user_id === $request->user()->id, 403);
             $service->recalculatePeserta($peserta);
             $peserta->update(['status' => 'selesai', 'waktu_selesai' => now()]);
+            $peserta->refresh()->load('asesmen');
+
+            if ($peserta->lulus) {
+                Sertifikat::firstOrCreate(
+                    ['user_id' => $peserta->user_id, 'asesmen_id' => $peserta->asesmen_id],
+                    [
+                        'nomor_sertifikat' => 'SKW-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
+                        'kompetensi_id' => $peserta->asesmen->kompetensi_id,
+                        'level_id' => $peserta->asesmen->level_id,
+                        'nilai_akhir' => $peserta->nilai,
+                        'kategori_kompetensi' => $service->kategori((float) $peserta->nilai),
+                        'tanggal_terbit' => now(),
+                        'tanggal_expired' => now()->addYears(3),
+                        'is_active' => true,
+                    ]
+                );
+            }
 
             return $peserta->refresh();
         });

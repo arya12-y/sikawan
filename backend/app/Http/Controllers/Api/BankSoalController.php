@@ -28,6 +28,29 @@ class BankSoalController extends CrudController
         return ['kompetensi_id' => ['required', 'exists:kompetensis,id'], 'level_id' => ['nullable', 'exists:levels,id'], 'jenis' => ['required', Rule::in(['pilihan_ganda', 'essay'])], 'pertanyaan' => ['required', 'string'], 'pilihan' => ['nullable', 'array'], 'jawaban_benar' => ['nullable', 'string'], 'pembahasan' => ['nullable', 'string'], 'bobot' => ['required', 'numeric', 'min:0'], 'is_active' => ['boolean']];
     }
 
+    public function store(Request $request)
+    {
+        $data = $request->validate($this->validationRules());
+        if (isset($data['pilihan']) && is_array($data['pilihan'])) {
+            $data['pilihan'] = json_encode($data['pilihan']);
+        }
+        $data['created_by'] = $request->user()?->id;
+
+        return response()->json(BankSoal::create($data)->load($this->with), 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $soal = BankSoal::findOrFail($id);
+        $data = $request->validate($this->validationRules($soal));
+        if (isset($data['pilihan']) && is_array($data['pilihan'])) {
+            $data['pilihan'] = json_encode($data['pilihan']);
+        }
+        $soal->update($data);
+
+        return response()->json($soal->load($this->with));
+    }
+
     public function preview($id)
     {
         return response()->json(BankSoal::with($this->with)->findOrFail($id));

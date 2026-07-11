@@ -17,7 +17,33 @@ class NotifikasiController extends Controller
     {
         abort_unless($this->isAdmin($request), 403);
 
-        return response()->json(Notifikasi::create($request->validate(['user_id' => ['required', 'exists:users,id'], 'judul' => ['required'], 'pesan' => ['required'], 'tipe' => ['nullable'], 'link' => ['nullable']])), 201);
+        $data = $request->validate([
+            'role' => ['required', 'string'],
+            'judul' => ['required'],
+            'pesan' => ['required'],
+            'tipe' => ['nullable'],
+            'link' => ['nullable']
+        ]);
+
+        $users = \App\Models\User::role($data['role'])->pluck('id');
+        $notifications = [];
+        
+        foreach ($users as $userId) {
+            $notifications[] = [
+                'user_id' => $userId,
+                'judul' => $data['judul'],
+                'pesan' => $data['pesan'],
+                'tipe' => $data['tipe'] ?? 'info',
+                'link' => $data['link'] ?? null,
+                'is_read' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        Notifikasi::insert($notifications);
+
+        return response()->json(['message' => 'Notifikasi berhasil dikirim ke ' . count($notifications) . ' pengguna'], 201);
     }
 
     public function markRead(Request $request, $id)

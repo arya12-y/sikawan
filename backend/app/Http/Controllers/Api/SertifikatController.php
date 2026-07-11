@@ -14,7 +14,13 @@ class SertifikatController extends Controller
 {
     public function index(Request $request)
     {
-        return response()->json(Sertifikat::with('user', 'asesmen', 'kompetensi', 'level')->latest()->paginate((int) $request->query('per_page', 15)));
+        $query = Sertifikat::with('user', 'asesmen', 'kompetensi', 'level')->latest();
+
+        if ($request->user()?->hasRole('Walidata')) {
+            $query->where('user_id', $request->user()->id);
+        }
+
+        return response()->json($query->paginate((int) $request->query('per_page', 15)));
     }
 
     public function generate(AssessmentService $service, $pesertaId)

@@ -1,5 +1,7 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { canAccessPath } from '../utils/access'
 import { useAuth } from '../hooks/useAuth'
+import NotificationDropdown from '../Components/NotificationDropdown'
 
 const menuItems = [
   { label: 'Dashboard', icon: 'bi-speedometer2', path: '/' },
@@ -23,10 +25,18 @@ const titleMap = {
   '/level': 'Level',
   '/badge': 'Badge',
   '/kategori': 'Kategori',
+  '/walidata': 'Walidata',
+  '/penguji': 'Penguji',
   '/users': 'Pengguna',
+  '/pembelajaran/video': 'Video Pembelajaran',
+  '/pembelajaran/pdf': 'Modul PDF',
+  '/pembelajaran/presentasi': 'Presentasi',
+  '/pembelajaran/quiz': 'Quiz & Latihan',
 }
 
-function SidebarContent() {
+function SidebarContent({ user }) {
+  const visibleMenus = menuItems.filter((item) => canAccessPath(user, item.path))
+
   return (
     <>
       <Link className="brand-link" to="/">
@@ -34,7 +44,7 @@ function SidebarContent() {
         <span className="brand-text">SIKAWAN</span>
       </Link>
       <nav className="sidebar-nav">
-        {menuItems.map((item) => (
+        {visibleMenus.map((item) => (
           <NavLink key={item.path} to={item.path} end={item.path === '/'} className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <i className={`bi ${item.icon}`}></i>
             <span>{item.label}</span>
@@ -53,10 +63,10 @@ function AdminLayout() {
   return (
     <div className="admin-wrapper">
       <aside className="admin-sidebar d-none d-lg-flex">
-        <SidebarContent />
+        <SidebarContent user={user} />
       </aside>
       <div className="offcanvas offcanvas-start admin-offcanvas" tabIndex="-1" id="mobileSidebar">
-        <div className="offcanvas-body p-0"><SidebarContent /></div>
+        <div className="offcanvas-body p-0"><SidebarContent user={user} /></div>
       </div>
       <div className="admin-main">
         <header className="admin-navbar navbar navbar-expand bg-white">
@@ -74,10 +84,7 @@ function AdminLayout() {
               </nav>
             </div>
             <div className="ms-auto d-flex align-items-center gap-3">
-              <button className="btn btn-light position-relative" type="button">
-                <i className="bi bi-bell"></i>
-                <span className="notification-dot"></span>
-              </button>
+              <NotificationDropdown />
               <div className="dropdown">
                 <button className="btn user-menu dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                   <span className="avatar">{(user?.name ?? 'A').slice(0, 1).toUpperCase()}</span>

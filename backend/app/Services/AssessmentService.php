@@ -22,7 +22,7 @@ class AssessmentService
         $peserta->loadMissing('asesmen.bankSoals', 'jawabanPesertas.bankSoal');
         $totalBobot = (float) $peserta->asesmen?->bankSoals->sum(fn ($soal) => (float) $soal->bobot);
         $totalNilai = (float) $peserta->jawabanPesertas->sum(fn ($jawaban) => (float) ($jawaban->nilai ?? 0));
-        $nilai = $totalBobot > 0 ? round(($totalNilai / $totalBobot) * 100, 2) : 0;
+        $nilai = $totalBobot > 0 ? round(($totalNilai / $totalBobot) * 100) : 0;
 
         $peserta->update([
             'nilai' => $nilai,
@@ -41,10 +41,11 @@ class AssessmentService
     public function kategori(float $nilai): string
     {
         return match (true) {
-            $nilai >= 90 => 'Sangat Kompeten',
-            $nilai >= 75 => 'Kompeten',
-            $nilai >= 60 => 'Cukup Kompeten',
-            default => 'Belum Kompeten',
+            $nilai >= 90 => 'Ahli',
+            $nilai >= 80 => 'Mahir',
+            $nilai >= 70 => 'Terampil',
+            $nilai >= 60 => 'Dasar',
+            default => 'Pemula',
         };
     }
 }

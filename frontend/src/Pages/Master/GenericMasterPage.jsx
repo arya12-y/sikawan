@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import api from '../../api/axios'
 
@@ -31,7 +32,7 @@ function FormModal({ id, title, fields, current, onSubmit }) {
 }
 
 function DataTable({ fields, rows, onEdit, onDelete }) {
-  return <div className="table-responsive"><table className="table table-hover align-middle"><thead><tr>{fields.map((f) => <th key={f.name}>{f.label}</th>)}<th className="text-end">Aksi</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}>{fields.map((f) => <td key={f.name}>{String(row[f.name] ?? '')}</td>)}<td className="text-end"><button className="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#formModal" onClick={() => onEdit(row)}>Edit</button><button className="btn btn-sm btn-outline-danger" onClick={() => onDelete(row)}>Hapus</button></td></tr>)}</tbody></table></div>
+  return <div className="table-responsive"><table className="table table-hover align-middle"><thead><tr>{fields.map((f) => <th key={f.name}>{f.label}</th>)}<th className="text-end">Aksi</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}>{fields.map((f) => <td key={f.name}>{String(row[f.name] ?? '')}</td>)}<td className="text-end text-nowrap"><button className="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#formModal" onClick={() => onEdit(row)} title="Edit"><i className="bi bi-pencil"></i></button><button className="btn btn-sm btn-outline-danger" onClick={() => onDelete(row)} title="Hapus"><i className="bi bi-trash"></i></button></td></tr>)}</tbody></table></div>
 }
 
 function GenericMasterPage({ endpoint, fields, title, filters = [] }) {
@@ -82,7 +83,42 @@ function GenericMasterPage({ endpoint, fields, title, filters = [] }) {
     }
   }
 
-  return <div className="card shadow-sm"><div className="card-body"><div className="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3"><h4 className="mb-0">{title}</h4><button className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#formModal" onClick={() => setCurrent(null)}>Tambah</button></div><div className="row g-2 mb-3"><div className="col-md-5"><input className="form-control" placeholder="Cari..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>{filters.length > 0 && <div className="col-md-4"><select className="form-select" value={filter} onChange={(e) => setFilter(e.target.value)}><option value="">Semua filter</option>{filters.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}</select></div>}<div className="col-md-3 d-grid"><button className="btn btn-outline-primary" onClick={load}>Refresh</button></div></div><DataTable fields={fields} rows={rows} onEdit={setCurrent} onDelete={remove} /><FormModal id="formModal" title={modalTitle} fields={fields} current={current} onSubmit={save} /></div></div>
+  return (
+    <div className="card shadow-sm border-0">
+      <div className="card-body">
+        <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+          <div className="d-flex align-items-center gap-3">
+            <Link className="btn btn-outline-secondary btn-sm" to="/master-data"><i className="bi bi-arrow-left me-1"></i>Kembali</Link>
+            <h4 className="mb-0 fw-bold">{title}</h4>
+          </div>
+          <button className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#formModal" onClick={() => setCurrent(null)}>
+            <i className="bi bi-plus-lg me-1"></i>Tambah
+          </button>
+        </div>
+        <div className="row g-2 mb-4">
+          <div className="col-md-5">
+            <div className="input-group">
+              <span className="input-group-text bg-light border-end-0"><i className="bi bi-search"></i></span>
+              <input className="form-control border-start-0 ps-0" placeholder={`Cari ${title}...`} value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
+          {filters.length > 0 && (
+            <div className="col-md-4">
+              <select className="form-select" value={filter} onChange={(e) => setFilter(e.target.value)}>
+                <option value="">Semua filter</option>
+                {filters.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="col-md-3">
+            <button className="btn btn-outline-secondary w-100" onClick={load}><i className="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+          </div>
+        </div>
+        <DataTable fields={fields} rows={rows} onEdit={setCurrent} onDelete={remove} />
+        <FormModal id="formModal" title={modalTitle} fields={fields} current={current} onSubmit={save} />
+      </div>
+    </div>
+  )
 }
 
 export default GenericMasterPage
