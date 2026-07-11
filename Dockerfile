@@ -32,7 +32,8 @@ WORKDIR /var/www/html
 
 # 5. Berikan akses folder & Install dependensi
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+    && rm -rf vendor composer.lock \
+    && composer update --no-dev --optimize-autoloader --ignore-platform-reqs
 
 # 6. Jalankan command agar Laravel bersih
 RUN php artisan config:cache \
