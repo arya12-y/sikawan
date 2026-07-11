@@ -1,18 +1,20 @@
-# Gunakan image PHP dengan ekstensi yang sudah lengkap
 FROM php:8.3-apache
 
-# Install ekstensi GD dan sistem dependensi lainnya
+# Install sistem dependensi yang dibutuhkan PHP
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
+    libzip-dev \
+    zip \
+    unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd
+    && docker-php-ext-install gd zip pdo_mysql
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Salin semua file proyek ke dalam container
+# Salin semua file proyek
 COPY . /var/www/html
 
 # Set working directory
@@ -24,5 +26,5 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 # Jalankan instalasi dependensi
 RUN composer install --no-dev --optimize-autoloader
 
-# Expose port (Railway butuh ini)
+# Expose port
 EXPOSE 80
