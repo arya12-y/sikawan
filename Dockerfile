@@ -1,31 +1,31 @@
-FROM php:8.3-apache
+FROM php:8.3-fpm
 
-# 1. Install sistem dependensi
+# Install sistem dependensi
 RUN apt-get update && apt-get install -y \
-    libpng-dev libjpeg-dev libfreetype6-dev libzip-dev zip unzip \
+    libpng-dev libjpeg-dev libfreetype6-dev libzip-dev zip unzip nginx \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd zip pdo_mysql
 
-# 2. STRATEGI RESET APACHE:
-# Hapus paksa semua konfigurasi modul MPM sebelum mengaktifkan yang baru
-RUN rm -f /etc/apache2/mods-enabled/mpm_*.load \
-    && rm -f /etc/apache2/mods-enabled/mpm_*.conf \
-    && a2enmod mpm_prefork
+# Copy konfigurasi Nginx untuk Laravel
+RUN echo 'server {\n\
+    listen 80;\n\
+    index index.php index.html;\n\
+    root /var/www/html/public;\n\
+    location / {\n\
+        try_files $uri $uri/ /index.php?$query_string;\n\
+    }\n\
+    location ~ \.php$ {\n\
+        fastcgi_pass 127.0.0.1:9000;\n\
+        fastcgi_index index.php;\n\
+        include fastcgi_params;\n\
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;\n\
+    }\n\
+}' > /etc/nginx/sites-available/default
 
-# 3. Konfigurasi Apache (VirtualHost)
-RUN echo '<VirtualHost *:80>\n\
-    DocumentRoot /var/www/html/public\n\
-    <Directory /var/www/html/public>\n\
-        AllowOverride All\n\
-        Require all granted\n\
-    </Directory>\n\
-</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
-
-# 4. Aktifkan modul penting
-RUN a2enmod rewrite
-
-# 5. Persiapan Laravel
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Salin semua file proyek
 COPY . /var/www/html
 WORKDIR /var/www/html
 
@@ -33,4 +33,5 @@ WORKDIR /var/www/html
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
-EXPOSE 80
+# Jalankan Nginx dan PHP-FPM secara bersamaan
+CMD service nginx start && php-fpm
