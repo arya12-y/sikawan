@@ -20,14 +20,14 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy file Laravel
+# Salin semua file ke working directory
 COPY . .
 
-# Set permission agar Laravel bisa nulis di storage
+# Set permission (PENTING untuk Laravel)
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Install dependencies dengan mengabaikan requirement platform agar tidak crash
+# Install dependencies (gunakan --ignore-platform-reqs agar tidak rewel)
 RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
-# Jalankan server
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
+# PERBAIKAN DI SINI: Tidak perlu cd karena kita sudah di /var/www/html
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
