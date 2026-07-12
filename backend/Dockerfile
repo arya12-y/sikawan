@@ -1,14 +1,27 @@
+# Gunakan image PHP yang sudah punya segalanya
 FROM php:8.3-fpm
 
-# Install sistem dependencies
+# Install dependensi sistem yang dibutuhkan Laravel
 RUN apt-get update && apt-get install -y \
-    libgd-dev \
     libpng-dev \
     libjpeg-dev \
-    libfreetype6-dev
+    libfreetype6-dev \
+    zip \
+    unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd pdo pdo_mysql
 
-# Install PHP GD extension
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# (Lanjutkan dengan konfigurasi Laravel lainnya sesuai kebutuhanmu)
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy file Laravel ke container
+COPY . .
+
+# Install dependencies Laravel
+RUN composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-gd
+
+# Jalankan server
+CMD php artisan serve --host=0.0.0.0 --port=$PORT
