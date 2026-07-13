@@ -15,35 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
 
+        // Daftarkan HandleCors secara resmi ke grup API agar membaca config/cors.php
+        $middleware->api(append: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
-
-        // === AWAL BLOK KODE YANG DIEDIT (CUSTOM CORS GLOBAL MIDDLEWARE) ===
-        $middleware->append(function (Request $request, \Closure $next) {
-            // 1. Tangani Preflight Request (OPTIONS) yang dikirim browser sebelum POST
-            if ($request->isMethod('OPTIONS')) {
-                return response('', 200)
-                    ->header('Access-Control-Allow-Origin', 'https://sikawan.up.railway.app')
-                    ->header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
-                    ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
-                    ->header('Access-Control-Allow-Credentials', 'true');
-            }
-
-            // 2. Lanjutkan request biasa (POST/GET) ke controller
-            $response = $next($request);
-
-            // 3. Suntikkan header CORS ke response sebelum dikirim balik ke frontend
-            if (method_exists($response, 'header')) {
-                $response->header('Access-Control-Allow-Origin', 'https://sikawan.up.railway.app')
-                         ->header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
-                         ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
-                         ->header('Access-Control-Allow-Credentials', 'true');
-            }
-
-            return $response;
-        });
-        // === AKHIR BLOK KODE YANG DIEDIT ===
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

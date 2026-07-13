@@ -2,7 +2,7 @@
 
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
-    'allowed_origins' => ['*'], // Mengizinkan semua domain termasuk sikawan.up.railway.app
+    'allowed_origins' => ['*'], // Membuka akses untuk domain sikawan.up.railway.app
     'allowed_methods' => ['*'],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
