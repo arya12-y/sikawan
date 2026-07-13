@@ -13,16 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->statefulApi();
-
-        // Daftarkan HandleCors secara resmi ke grup API agar membaca config/cors.php
-        $middleware->api(append: [
-            \Illuminate\Http\Middleware\HandleCors::class,
-        ]);
-
-        $middleware->validateCsrfTokens(except: [
-            'api/*',
-        ]);
+        // Biarkan kosong seperti bawaannya agar Laravel membaca config/cors.php secara otomatis
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

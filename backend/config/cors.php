@@ -1,11 +1,11 @@
 <?php
 
 return [
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
-    'allowed_origins' => ['*'], // Membuka akses untuk domain sikawan.up.railway.app
+    'paths' => ['*'], // Izinkan SEMUA jalur, bukan cuma api/*
+    'allowed_origins' => ['*'], // Izinkan semua domain
     'allowed_methods' => ['*'],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 0,
-    'supports_credentials' => true,
+    'supports_credentials' => false, // Set ke false dulu biar gak bentrok sama origin '*'
 ];
