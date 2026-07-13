@@ -48,7 +48,7 @@ function NotificationDropdown() {
         <i className="bi bi-bell"></i>
         {unreadCount > 0 && <span className="notification-dot"></span>}
       </button>
-      <div className={`dropdown-menu dropdown-menu-end shadow border-0 p-0 ${open ? 'show' : ''}`} style={{ width: 320, maxHeight: 400, overflowY: 'auto' }}>
+      <div className={`dropdown-menu dropdown-menu-end shadow border-0 p-0 notification-dropdown-menu ${open ? 'show' : ''}`} style={{ width: 320, maxHeight: 400, overflowY: 'auto' }}>
         <div className="d-flex justify-content-between align-items-center p-3 border-bottom bg-light sticky-top">
           <h6 className="mb-0 fw-bold">Notifikasi</h6>
           {unreadCount > 0 && (

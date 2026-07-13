@@ -99,6 +99,7 @@ function AdminLayout() {
                 <button className="btn user-menu dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                   <span className="avatar">{(user?.name ?? 'A').slice(0, 1).toUpperCase()}</span>
                   <span className="d-none d-sm-inline">{user?.name ?? 'Administrator'}</span>
+                  <span className="mobile-user-name d-sm-none">{(user?.name ?? 'Admin').split(' ')[0]}</span>
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end shadow border-0 mt-1" style={{ borderRadius: 14, minWidth: 180 }}>
                   <li><Link className="dropdown-item py-2" to="/profile"><i className="bi bi-person me-2"></i>Profil Saya</Link></li>
