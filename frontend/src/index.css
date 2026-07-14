@@ -431,7 +431,9 @@ a { text-decoration: none; color: inherit; }
 /* ─── Z-INDEX LAYERING FIX ────────────────── */
 .admin-navbar { z-index: 1020; position: sticky; top: 0; }
 .admin-sidebar { z-index: 1030; }
-.admin-offcanvas { z-index: 1040 !important; }
+.admin-offcanvas { z-index: 1050 !important; }
+
+.offcanvas-backdrop { z-index: 1040 !important; }
 .dropdown-menu { z-index: 1045 !important; }
 
 .modal-backdrop { z-index: 1050 !important; }

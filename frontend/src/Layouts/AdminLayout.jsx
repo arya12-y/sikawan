@@ -62,10 +62,10 @@ function AdminLayout() {
 
   const closeMobileSidebar = () => {
     const el = document.getElementById('mobileSidebar')
-    if (el) {
-      const offcanvas = window.bootstrap?.Offcanvas?.getInstance(el) || (window.bootstrap?.Offcanvas ? new window.bootstrap.Offcanvas(el) : null)
-      try { offcanvas?.hide() } catch { undefined }
-    }
+    if (!el) return
+    el.classList.remove('show')
+    document.querySelectorAll('.offcanvas-backdrop').forEach((b) => b.remove())
+    document.body.style.overflow = ''
   }
 
   return (
@@ -81,7 +81,17 @@ function AdminLayout() {
       <div className="admin-main">
         <header className="admin-navbar navbar navbar-expand bg-white">
           <div className="container-fluid px-3 px-lg-4">
-            <button className="btn btn-icon d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar">
+            <button className="btn btn-icon d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" onClick={() => {
+              const target = document.getElementById('mobileSidebar')
+              if (target && !target.classList.contains('show')) {
+                target.classList.add('show')
+                const backdrop = document.createElement('div')
+                backdrop.className = 'offcanvas-backdrop fade show'
+                document.body.appendChild(backdrop)
+                document.body.style.overflow = 'hidden'
+                backdrop.onclick = closeMobileSidebar
+              }
+            }}>
               <i className="bi bi-list fs-5"></i>
             </button>
             <div className="flex-grow-1">
