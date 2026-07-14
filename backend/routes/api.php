@@ -27,6 +27,8 @@ Route::post('register', [AuthController::class, 'register']);
 Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('reset-password', [AuthController::class, 'resetPassword']);
 Route::get('sertifikat/verify/{nomor}', [SertifikatController::class, 'verify']);
+Route::get('materi/{materi}/file', [MateriController::class, 'serveFile']);
+Route::get('materi/{materi}/thumbnail', [MateriController::class, 'serveThumbnail']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('me', [AuthController::class, 'me']);
@@ -61,8 +63,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
     ]);
 
     Route::post('materi/{materi}/publish', [MateriController::class, 'publish']);
-    Route::get('materi/{materi}/file', [MateriController::class, 'serveFile']);
-    Route::get('materi/{materi}/thumbnail', [MateriController::class, 'serveThumbnail']);
     Route::post('asesmens/{asesmen}/attach-soals', [AsesmenController::class, 'attachSoals']);
     Route::post('asesmens/{asesmen}/start', [AsesmenController::class, 'start']);
     Route::post('peserta-asesmens/{peserta}/save-answer', [AsesmenController::class, 'saveAnswer']);
