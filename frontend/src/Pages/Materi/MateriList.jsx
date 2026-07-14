@@ -275,7 +275,7 @@ function MateriList({ jenis }) {
       {showForm && canManage && (
         <div className="card shadow-sm border-0 mt-4 inline-form-card">
           <div className="card-body p-4">
-              <form onSubmit={handleSubmit(onSubmit)}>
+              <form noValidate onSubmit={handleSubmit(onSubmit)}>
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h5 className="fw-bold mb-0">{editing ? 'Edit' : 'Tambah'} {config.title}</h5>
                   <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowForm(false)}><i className="bi bi-arrow-left me-1"></i>Kembali</button>
