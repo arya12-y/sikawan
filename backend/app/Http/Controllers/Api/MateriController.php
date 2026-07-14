@@ -29,6 +29,37 @@ class MateriController extends CrudController
         return ['kompetensi_id' => ['required', 'exists:kompetensis,id'], 'level_id' => ['nullable', 'exists:levels,id'], 'kategori_id' => ['nullable', 'exists:kategoris,id'], 'judul' => ['required', 'string'], 'deskripsi' => ['nullable', 'string'], 'jenis' => ['required', Rule::in(['video', 'pdf', 'presentasi', 'dokumen'])], 'file' => ['nullable', 'file', 'max:51200'], 'thumbnail_file' => ['nullable', 'image', 'max:4096'], 'file_path' => ['nullable', 'string'], 'thumbnail' => ['nullable', 'string'], 'url_video' => ['nullable', 'url'], 'durasi' => ['nullable', 'integer'], 'urutan' => ['nullable', 'integer'], 'is_published' => ['boolean']];
     }
 
+    public function index(Request $request)
+    {
+        $query = $this->modelClass()::query()->with($this->with);
+
+        // Non-admin users only see published materials
+        if (!$request->user()?->hasAnyRole(['Super Admin', 'Admin Diskominfo'])) {
+            $query->where('is_published', true);
+        }
+
+        if ($search = $request->query('search')) {
+            if ($this->searchable !== []) {
+                $query->where(function ($q) use ($search) {
+                    foreach ($this->searchable as $field) {
+                        $q->orWhere($field, 'like', "%{$search}%");
+                    }
+                });
+            }
+        }
+
+        foreach ($request->only($this->filterable) as $field => $value) {
+            if ($value !== null && $value !== '') {
+                $query->where($field, $value);
+            }
+        }
+
+        $sort = in_array($request->query('sort'), $this->sortable, true) ? $request->query('sort') : 'id';
+        $direction = $request->query('direction', 'desc') === 'asc' ? 'asc' : 'desc';
+
+        return response()->json($query->orderBy($sort, $direction)->paginate((int) $request->query('per_page', 15)));
+    }
+
     public function store(Request $request)
     {
         $data = Validator::make($request->all(), $this->validationRules())->validate();

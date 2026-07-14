@@ -36,7 +36,7 @@ function MateriList({ jenis }) {
   const [editing, setEditing] = useState(null)
   const [viewing, setViewing] = useState(null)
   const [thumbnailPreview, setThumbnailPreview] = useState(null)
-  const { register, handleSubmit, reset } = useForm()
+  const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -130,7 +130,8 @@ function MateriList({ jenis }) {
       setShowForm(false)
       load()
     } catch (e) {
-      alert(e.response?.data?.message || 'Gagal menyimpan data')
+      const message = e.response?.data?.message || e.response?.data?.errors?.[Object.keys(e.response?.data?.errors || {})[0]]?.[0] || e.message || 'Gagal menyimpan data'
+      alert('Gagal menyimpan: ' + message)
     }
   }
 
@@ -283,6 +284,7 @@ function MateriList({ jenis }) {
                     <div className="col-12">
                       <label className="form-label fw-semibold">Judul <span className="text-danger">*</span></label>
                       <input className="form-control" {...register('judul', { required: true })} />
+                      {errors.judul && <small className="text-danger">Judul harus diisi</small>}
                     </div>
                     <div className="col-12">
                       <label className="form-label fw-semibold">Deskripsi</label>
@@ -294,6 +296,7 @@ function MateriList({ jenis }) {
                         <option value="">Pilih Kompetensi</option>
                         {kompetensis.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
                       </select>
+                      {errors.kompetensi_id && <small className="text-danger">Kompetensi harus dipilih</small>}
                     </div>
                     <div className="col-md-4">
                       <label className="form-label fw-semibold">Level</label>
@@ -342,7 +345,7 @@ function MateriList({ jenis }) {
                   </div>
                 <div className="d-flex justify-content-end gap-2 mt-4">
                   <button type="button" className="btn btn-outline-secondary" onClick={() => setShowForm(false)}>Batal</button>
-                  <button className="btn btn-primary">Simpan</button>
+                  <button type="submit" className="btn btn-primary">Simpan</button>
                 </div>
               </form>
           </div>
