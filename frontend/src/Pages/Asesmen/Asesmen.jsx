@@ -206,10 +206,13 @@ function Asesmen() {
         <div className="row g-4">
           <div className="col-lg-8"><div className="card shadow-sm border-0"><div className="card-body">
             <h5 className="fw-bold mb-3">{peserta.asesmen?.judul}</h5>
-            {questions.map((soal, index) => <div className="border rounded-4 p-3 mb-3" key={soal.id}>
+            {questions.map((soal, index) => {
+              const choices = typeof soal.pilihan === 'string' ? JSON.parse(soal.pilihan || '[]') : (Array.isArray(soal.pilihan) ? soal.pilihan : [])
+              return <div className="border rounded-4 p-3 mb-3" key={soal.id}>
               <div className="fw-semibold mb-2">{index + 1}. {soal.pertanyaan}</div>
-              {soal.jenis === 'pilihan_ganda' && Array.isArray(soal.pilihan) ? soal.pilihan.map((choice, i) => <label className="d-block mb-2" key={i}><input className="form-check-input me-2" type="radio" name={`soal-${soal.id}`} checked={answers[soal.id] === choice} onChange={() => saveAnswer(soal.id, choice)} />{choice}</label>) : <textarea className="form-control" rows="4" value={answers[soal.id] || ''} onChange={(e) => saveAnswer(soal.id, e.target.value)} />}
-            </div>)}
+              {soal.jenis === 'pilihan_ganda' && choices.length > 0 ? choices.map((choice, i) => <label className="d-block mb-2" key={i}><input className="form-check-input me-2" type="radio" name={`soal-${soal.id}`} checked={answers[soal.id] === choice} onChange={() => saveAnswer(soal.id, choice)} />{choice}</label>) : <textarea className="form-control" rows="4" value={answers[soal.id] || ''} onChange={(e) => saveAnswer(soal.id, e.target.value)} />}
+            </div>
+            })}
           </div></div></div>
           <div className="col-lg-4"><div className="card shadow-sm border-0 sticky-top" style={{ top: 90 }}><div className="card-body">
             <div className="text-center mb-3"><div className="fs-2 fw-bold text-danger">{formatTime(secondsLeft)}</div><small className="text-muted">Sisa waktu</small></div>
