@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 abstract class CrudController extends Controller
 {
@@ -84,7 +85,7 @@ abstract class CrudController extends Controller
         return response()->json(['message' => 'Deleted']);
     }
 
-    protected function unique(string $table, string $column, ?Model $model = null): Rule
+    protected function unique(string $table, string $column, ?Model $model = null): Unique
     {
         return Rule::unique($table, $column)->ignore($model?->getKey());
     }
