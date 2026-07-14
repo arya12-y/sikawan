@@ -23,36 +23,44 @@ class LaporanController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $type = $request->query('type') === 'sertifikat' ? 'sertifikat' : 'asesmen';
-        $rows = $this->reportRows($type);
-        $title = $type === 'sertifikat' ? 'Laporan Sertifikat Kompetensi' : 'Laporan Hasil Asesmen';
-        $html = '<h2 style="margin-bottom:4px">'.$title.'</h2><p style="color:#666">SIKAWAN — dicetak '.now()->format('Y-m-d').'</p><table width="100%" cellspacing="0" cellpadding="7" style="border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th align="left">Nama</th><th align="left">Asesmen / Nomor</th><th align="center">Nilai</th><th align="left">Status</th><th align="left">Tanggal</th></tr></thead><tbody>';
+        try {
+            $type = $request->query('type') === 'sertifikat' ? 'sertifikat' : 'asesmen';
+            $rows = $this->reportRows($type);
+            $title = $type === 'sertifikat' ? 'Laporan Sertifikat Kompetensi' : 'Laporan Hasil Asesmen';
+            $html = '<h2 style="margin-bottom:4px">'.$title.'</h2><p style="color:#666">SIKAWAN — dicetak '.now()->format('Y-m-d').'</p><table width="100%" cellspacing="0" cellpadding="7" style="border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th align="left">Nama</th><th align="left">Asesmen / Nomor</th><th align="center">Nilai</th><th align="left">Status</th><th align="left">Tanggal</th></tr></thead><tbody>';
 
-        foreach ($rows as $row) {
-            $html .= '<tr style="border-bottom:1px solid #e5e7eb"><td>'.e($row['nama']).'</td><td>'.e($row['referensi']).'</td><td align="center">'.e((string) $row['nilai']).'</td><td>'.e($row['status']).'</td><td>'.e($row['tanggal']).'</td></tr>';
+            foreach ($rows as $row) {
+                $html .= '<tr style="border-bottom:1px solid #e5e7eb"><td>'.e($row['nama']).'</td><td>'.e($row['referensi']).'</td><td align="center">'.e((string) $row['nilai']).'</td><td>'.e($row['status']).'</td><td>'.e($row['tanggal']).'</td></tr>';
+            }
+
+            $html .= '</tbody></table>';
+
+            return Pdf::loadHTML($html)->download('laporan-'.$type.'.pdf');
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Gagal export PDF: '.$e->getMessage()], 500);
         }
-
-        $html .= '</tbody></table>';
-
-        return Pdf::loadHTML($html)->download('laporan-'.$type.'.pdf');
     }
 
     public function exportExcel(Request $request)
     {
-        $type = $request->query('type') === 'sertifikat' ? 'sertifikat' : 'asesmen';
-        $csv = "nama,asesmen_atau_nomor,nilai,status,tanggal\n";
+        try {
+            $type = $request->query('type') === 'sertifikat' ? 'sertifikat' : 'asesmen';
+            $csv = "nama,asesmen_atau_nomor,nilai,status,tanggal\n";
 
-        foreach ($this->reportRows($type) as $row) {
-            $csv .= implode(',', [
-                '"'.str_replace('"', '""', $row['nama']).'"',
-                '"'.str_replace('"', '""', $row['referensi']).'"',
-                $row['nilai'],
-                '"'.str_replace('"', '""', $row['status']).'"',
-                $row['tanggal'],
-            ])."\n";
+            foreach ($this->reportRows($type) as $row) {
+                $csv .= implode(',', [
+                    '"'.str_replace('"', '""', $row['nama']).'"',
+                    '"'.str_replace('"', '""', $row['referensi']).'"',
+                    $row['nilai'],
+                    '"'.str_replace('"', '""', $row['status']).'"',
+                    $row['tanggal'],
+                ])."\n";
+            }
+
+            return Response::make($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename=laporan-'.$type.'.csv']);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Gagal export Excel: '.$e->getMessage()], 500);
         }
-
-        return Response::make($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename=laporan-'.$type.'.csv']);
     }
 
     private function reportRows(string $type): array
