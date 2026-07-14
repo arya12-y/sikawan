@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import api from '../../api/axios'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
@@ -13,8 +13,8 @@ function BankSoal() {
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
-  const { control, register, handleSubmit, reset } = useForm()
-  const jenis = useWatch({ control, name: 'jenis' })
+  const { register, handleSubmit, reset, watch } = useForm()
+  const jenis = watch('jenis')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -43,6 +43,8 @@ function BankSoal() {
       loadRefs()
     })
   }, [load, loadRefs])
+
+  const formKey = useMemo(() => editing?.id || 'create', [editing?.id])
 
   const openCreate = () => {
     setEditing(null)
@@ -169,7 +171,7 @@ function BankSoal() {
         </div>
       </div>}
 
-      {showForm && <div className="card shadow-sm border-0">
+      {showForm && <div className="card shadow-sm border-0" key={formKey}>
         <div className="card-body p-4">
           <div className="d-flex justify-content-between align-items-center mb-4"><h5 className="fw-bold mb-0">{editing ? 'Edit' : 'Tambah'} Soal</h5><button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowForm(false)}><i className="bi bi-arrow-left me-1"></i>Kembali</button></div>
           <form onSubmit={handleSubmit(save)}><div className="row g-3">
