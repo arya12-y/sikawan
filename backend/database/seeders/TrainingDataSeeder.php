@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Materi;
 use App\Models\Walidata;
 use App\Models\Kompetensi;
+use App\Models\Level;
+use App\Models\Kategori;
 use Illuminate\Database\Seeder;
 
 class TrainingDataSeeder extends Seeder
@@ -15,43 +17,74 @@ class TrainingDataSeeder extends Seeder
     public function run(): void
     {
         $users = User::whereHas('walidata')->get();
-        $materis = Materi::all();
-        $kompetensis = Kompetensi::all();
         $walidatas = Walidata::all();
+        $kompetensis = Kompetensi::all();
 
-        if ($users->isEmpty() || $materis->isEmpty()) {
-            $this->command->warn('Butuh data User (dengan Walidata) dan Materi terlebih dahulu. Jalankan MasterDataSeeder dulu.');
-            return;
+        // --- BUAT SAMPLE MATERI AGAR PROGRESS BISA DI-SEED ---
+        $materis = Materi::all();
+        if ($materis->isEmpty()) {
+            $kompetensi = $kompetensis->first();
+            $level = Level::first();
+            $kategori = Kategori::first();
+            $creator = User::role('Super Admin')->first() ?? User::first();
+
+            $sampleMateris = [
+                ['judul' => 'Pengantar Satu Data Indonesia', 'jenis' => 'video', 'deskripsi' => 'Video pengantar konsep SDI', 'url_video' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'durasi' => 10],
+                ['judul' => 'Modul Statistik Sektoral', 'jenis' => 'pdf', 'deskripsi' => 'Panduan statistik sektoral untuk Walidata'],
+                ['judul' => 'Presentasi Metadata', 'jenis' => 'presentasi', 'deskripsi' => 'Slide pengenalan metadata statistik'],
+                ['judul' => 'Panduan Standar Data', 'jenis' => 'pdf', 'deskripsi' => 'Dokumen standar data pemerintah'],
+                ['judul' => 'Video Kualitas Data', 'jenis' => 'video', 'deskripsi' => 'Cara memeriksa kualitas data', 'url_video' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'durasi' => 15],
+            ];
+
+            foreach ($sampleMateris as $data) {
+                $materis->push(Materi::create([
+                    'kompetensi_id' => $kompetensi?->id,
+                    'level_id' => $level?->id,
+                    'kategori_id' => $kategori?->id,
+                    'judul' => $data['judul'],
+                    'jenis' => $data['jenis'],
+                    'deskripsi' => $data['deskripsi'],
+                    'url_video' => $data['url_video'] ?? null,
+                    'durasi' => $data['durasi'] ?? null,
+                    'is_published' => true,
+                    'created_by' => $creator?->id,
+                ]));
+            }
+
+            $materis = Materi::all(); // re-fetch
+            $this->command->info('Materi: '.$materis->count().' sample records created.');
         }
 
         // --- MATERI PROGRESS ---
-        $bar = $this->command->getOutput()->createProgressBar($users->count());
-        $bar->start();
+        if ($users->isNotEmpty() && $materis->isNotEmpty()) {
+            $bar = $this->command->getOutput()->createProgressBar($users->count());
+            $bar->start();
 
-        foreach ($users as $user) {
-            $completedCount = 0;
-            foreach ($materis->random(min($materis->count(), rand(1, 5))) as $materi) {
-                $isCompleted = (bool) rand(0, 1);
-                MateriProgress::updateOrCreate(
-                    ['user_id' => $user->id, 'materi_id' => $materi->id],
-                    [
-                        'progress' => $isCompleted ? 100 : rand(10, 90),
-                        'is_completed' => $isCompleted,
-                        'completed_at' => $isCompleted ? now()->subDays(rand(0, 30)) : null,
-                    ]
-                );
-                if ($isCompleted) $completedCount++;
+            foreach ($users as $user) {
+                foreach ($materis->random(min($materis->count(), rand(1, 5))) as $materi) {
+                    $isCompleted = (bool) rand(0, 1);
+                    MateriProgress::updateOrCreate(
+                        ['user_id' => $user->id, 'materi_id' => $materi->id],
+                        [
+                            'progress' => $isCompleted ? 100 : rand(10, 90),
+                            'is_completed' => $isCompleted,
+                            'completed_at' => $isCompleted ? now()->subDays(rand(0, 30)) : null,
+                        ]
+                    );
+                }
+                $bar->advance();
             }
-            $bar->advance();
+
+            $bar->finish();
+            $this->command->newLine();
+            $this->command->info('MateriProgress: '.MateriProgress::count().' records created.');
+        } else {
+            $this->command->warn('Lewati MateriProgress — butuh data User+Walidata dan Materi.');
         }
 
-        $bar->finish();
-        $this->command->newLine();
-        $this->command->info('MateriProgress: '.MateriProgress::count().' records created.');
-
         // --- NILAI KOMPETENSI ---
-        if ($kompetensis->isEmpty()) {
-            $this->command->warn('Tidak ada data Kompetensi. Lewati NilaiKompetensi.');
+        if ($walidatas->isEmpty() || $kompetensis->isEmpty()) {
+            $this->command->warn('Lewati NilaiKompetensi — butuh data Walidata dan Kompetensi.');
             return;
         }
 
@@ -70,7 +103,6 @@ class TrainingDataSeeder extends Seeder
                 );
             }
 
-            // Update walidatas.nilai_kompetensi (rata-rata)
             $avg = NilaiKompetensi::where('user_id', $walidata->user_id)->avg('nilai');
             $walidata->update(['nilai_kompetensi' => round($avg ?? 0, 2)]);
 
@@ -80,6 +112,6 @@ class TrainingDataSeeder extends Seeder
         $bar2->finish();
         $this->command->newLine();
         $this->command->info('NilaiKompetensi: '.NilaiKompetensi::count().' records created.');
-        $this->command->info('Selesai! Data training sudah siap. Buka dashboard untuk melihat grafik.');
+        $this->command->info('Selesai! Buka dashboard untuk melihat grafik.');
     }
 }
