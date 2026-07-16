@@ -29,7 +29,10 @@ function Laporan() {
     setExporting(format)
     try {
       const endpoint = format === 'pdf' ? '/laporan/export-pdf' : '/laporan/export-excel'
-      const res = await api.get(endpoint, { params: { type }, responseType: 'blob' })
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 30000)
+      const res = await api.get(endpoint, { params: { type }, responseType: 'blob', signal: controller.signal })
+      clearTimeout(timeout)
       const disposition = res.headers?.['content-disposition']
       const filename = disposition?.match(/filename=(.+)/)?.[1] || `laporan-${type}.${format === 'pdf' ? 'pdf' : 'csv'}`
       const url = URL.createObjectURL(new Blob([res.data]))
@@ -41,7 +44,9 @@ function Laporan() {
       link.remove()
       URL.revokeObjectURL(url)
     } catch (e) {
-      if (e.response?.data instanceof Blob) {
+      if (e.name === 'AbortError') {
+        alert('Waktu permintaan habis. Coba lagi.')
+      } else if (e.response?.data instanceof Blob) {
         const text = await e.response.data.text()
         try {
           const json = JSON.parse(text)
@@ -65,8 +70,8 @@ function Laporan() {
             <h4 className="fw-bold mb-1">Laporan</h4>
             <p className="text-muted mb-0">Laporan asesmen dan sertifikasi dalam bentuk tabel, PDF, dan Excel/CSV.</p>
           </div>
-          <div className="d-flex flex-wrap gap-2 flex-shrink-0">
-            <select className="form-select bg-light border-0" value={type} onChange={(e) => setType(e.target.value)}>
+          <div className="d-flex flex-wrap gap-2 flex-shrink-0 align-items-center">
+            <select className="form-select bg-light border-0 form-select-sm" style={{ width: 110, flex: '0 0 auto' }} value={type} onChange={(e) => setType(e.target.value)}>
               <option value="asesmen">Asesmen</option>
               <option value="sertifikat">Sertifikat</option>
             </select>

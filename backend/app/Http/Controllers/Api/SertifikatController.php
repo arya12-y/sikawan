@@ -35,7 +35,8 @@ class SertifikatController extends Controller
     public function download($id)
     {
         $sertifikat = Sertifikat::with('user', 'asesmen', 'kompetensi', 'level')->findOrFail($id);
-        $pdf = Pdf::loadHTML('<h1>Sertifikat Kompetensi</h1><p>'.e($sertifikat->user?->name ?? '').'</p><p>'.e($sertifikat->nomor_sertifikat).'</p>');
+        $pdf = Pdf::loadView('sertifikat.pdf', ['sertifikat' => $sertifikat]);
+        $pdf->setOption('isRemoteEnabled', true);
 
         return $pdf->download($sertifikat->nomor_sertifikat.'.pdf');
     }

@@ -15,6 +15,7 @@ const menuItems = [
   { label: 'Laporan', icon: 'bi-file-earmark-bar-graph', path: '/laporan' },
   { label: 'Audit Log', icon: 'bi-shield-check', path: '/audit-log' },
   { label: 'Notifikasi', icon: 'bi-bell', path: '/notifikasi' },
+  { label: 'Pengaturan', icon: 'bi-gear', path: '/settings' },
 ]
 
 const titleMap = {
