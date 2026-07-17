@@ -3,7 +3,7 @@ import axios from 'axios'
 const TOKEN_KEY = 'sikawan_token'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://backend-production-fdfb.up.railway.app/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',

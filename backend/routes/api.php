@@ -87,6 +87,4 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('laporan/export-excel', [LaporanController::class, 'exportExcel']);
     Route::post('notifikasis/mark-all-read', [NotifikasiController::class, 'markAllRead']);
     Route::post('notifikasis/{notifikasi}/mark-read', [NotifikasiController::class, 'markRead']);
-    Route::get('settings', [SettingController::class, 'index']);
-    Route::put('settings', [SettingController::class, 'update']);
 });
