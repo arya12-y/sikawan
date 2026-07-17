@@ -22,7 +22,6 @@ import MateriQuiz from './Pages/Materi/MateriQuiz'
 import Monitoring from './Pages/Monitoring/Monitoring'
 import Notifikasi from './Pages/Notifikasi/Notifikasi'
 import Sertifikat from './Pages/Sertifikat/Sertifikat'
-import Settings from './Pages/Settings/Settings'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { canAccessPath, firstAllowedPath } from './utils/access'
 
@@ -145,7 +144,6 @@ function AppRoutes() {
         <Route path="laporan" element={protect(<Laporan />)} />
         <Route path="audit-log" element={protect(<AuditLog />)} />
         <Route path="notifikasi" element={<Notifikasi />} />
-        <Route path="settings" element={protect(<Settings />)} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
