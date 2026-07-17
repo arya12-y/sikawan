@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\PengujiController;
 use App\Http\Controllers\Api\SertifikatController;
+use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WalidataController;
 use Illuminate\Support\Facades\Route;
