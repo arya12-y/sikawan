@@ -74,7 +74,7 @@ function Roles() {
               <table className="w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-500">
                   <tr className="border-b border-[#262636] bg-[#09090E]">
-                    <th className="px-5 py-3.5 font-semibold">Role</th><th className="px-5 py-3.5 font-semibold">Permission</th><th className="px-5 py-3.5 font-semibold text-center w-20">Pengguna</th><th className="px-5 py-3.5 text-right font-semibold w-28">Aksi</th>
+                    <th className="px-5 py-3.5 font-semibold">Role</th><th className="px-5 py-3.5 font-semibold">Permission</th><th className="px-5 py-3.5 font-semibold text-center w-20">Pengguna</th><th className="px-5 py-3.5 text-left font-semibold w-28 translate-x-[27px]">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#262636]">

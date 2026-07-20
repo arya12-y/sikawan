@@ -80,7 +80,7 @@ function Sertifikat() {
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase tracking-wider text-slate-500">
                 <tr className="border-b border-[#262636] bg-[#09090E]">
-                  <th className="px-4 py-3 font-semibold">Nomor</th><th className="px-4 py-3 font-semibold">Nama</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Kompetensi</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 font-semibold text-center w-16">Nilai</th><th className="px-4 py-3 font-semibold hidden lg:table-cell">Tanggal</th><th className="px-4 py-3 text-right font-semibold w-28">Aksi</th>
+                  <th className="px-4 py-3 font-semibold">Nomor</th><th className="px-4 py-3 font-semibold">Nama</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Kompetensi</th><th className="px-4 py-3 font-semibold hidden md:table-cell translate-x-[5px]">Level</th><th className="px-4 py-3 font-semibold text-center w-16">Nilai</th><th className="px-4 py-3 font-semibold hidden lg:table-cell">Tanggal</th><th className="px-4 py-3 text-left font-semibold w-28 translate-x-[35px]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#262636]">

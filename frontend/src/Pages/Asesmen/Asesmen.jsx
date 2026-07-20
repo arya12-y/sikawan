@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { AlertCircle as AlertCircleIcon, ClipboardCheck, Clock, ArrowLeft, Award, BookOpen, Shuffle, CheckCircle, XCircle, AlertTriangle, Plus, X, Pencil, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { confirmAction, confirmDelete } from '../../utils/confirm'
+import Swal from 'sweetalert2'
 import { useAuth } from '../../hooks/useAuth'
 import { can } from '../../utils/can'
 
@@ -41,7 +42,10 @@ function Asesmen() {
       const res = await api.post(`/peserta-asesmens/${peserta.id}/submit`)
       const review = await api.get(`/peserta-asesmens/${res.data.id}/review`)
       setPeserta(review.data); setActiveTab('result'); await load()
-    } catch (e) { alert(e.response?.data?.message || 'Gagal submit asesmen') }
+    } catch (e) {
+      const isDark = document.documentElement.classList.contains('dark')
+      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal submit asesmen', confirmButtonText: 'Tutup', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+    }
   }, [load, peserta])
   useEffect(() => {
     if (!secondsLeft || !peserta || peserta.status === 'selesai') return
@@ -63,7 +67,11 @@ function Asesmen() {
   }
   const remove = async (row) => { if (await confirmDelete(row.judul)) { await api.delete(`/asesmens/${row.id}`); load() } }
   const startExam = async (row) => {
-    try { setLoading(true); const res = await api.post(`/asesmens/${row.id}/start`); setPeserta(res.data); const saved = {}; (res.data.jawaban_pesertas || res.data.jawabanPesertas || []).forEach((item) => { saved[item.bank_soal_id] = item.jawaban }); setAnswers(saved); setSecondsLeft(Number(res.data.asesmen?.durasi || row.durasi || 0) * 60); setActiveTab('exam') } catch (e) { alert(e.response?.data?.message || 'Gagal memulai asesmen. Pastikan bank soal tersedia.') } finally { setLoading(false) }
+    try { setLoading(true); const res = await api.post(`/asesmens/${row.id}/start`); setPeserta(res.data); const saved = {}; (res.data.jawaban_pesertas || res.data.jawabanPesertas || []).forEach((item) => { saved[item.bank_soal_id] = item.jawaban }); setAnswers(saved); setSecondsLeft(Number(res.data.asesmen?.durasi || row.durasi || 0) * 60); setActiveTab('exam') } catch (e) {
+      const msg = e.response?.data?.message || 'Gagal memulai asesmen. Pastikan bank soal tersedia.'
+      const isDark = document.documentElement.classList.contains('dark')
+      Swal.fire({ icon: 'warning', title: 'Tidak dapat memulai', text: msg, confirmButtonText: 'Mengerti', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+    } finally { setLoading(false) }
   }
   const saveAnswer = async (soalId, value) => { setAnswers((state) => ({ ...state, [soalId]: value })); if (!peserta?.id) return; try { await api.post(`/peserta-asesmens/${peserta.id}/save-answer`, { bank_soal_id: soalId, jawaban: value }) } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan jawaban') } }
 
@@ -101,7 +109,7 @@ function Asesmen() {
               <table className="w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-500">
                   <tr className="border-b border-[#262636] bg-[#09090E]">
-                    <th className="px-4 py-3 font-semibold">Judul</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Kompetensi</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 font-semibold text-center w-16">Soal</th><th className="px-4 py-3 font-semibold w-20">Durasi</th><th className="px-4 py-3 font-semibold w-20">Status</th><th className="px-4 py-3 text-right font-semibold w-32">Aksi</th>
+                    <th className="px-4 py-3 font-semibold">Judul</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Kompetensi</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 font-semibold text-center w-16">Soal</th><th className="px-4 py-3 font-semibold w-20">Durasi</th><th className="px-4 py-3 font-semibold w-20">Status</th><th className="px-4 py-3 text-right font-semibold w-32 -translate-x-[25px]">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#262636]">

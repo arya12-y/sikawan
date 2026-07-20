@@ -184,7 +184,7 @@ function BankSoal() {
               <table className="w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-500">
                   <tr className="border-b border-[#262636] bg-[#09090E]">
-                    <th className="px-4 py-3 font-semibold">Soal</th><th className="px-4 py-3 font-semibold">Kompetensi</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Jenis</th><th className="px-4 py-3 font-semibold hidden lg:table-cell">Jawaban</th><th className="px-4 py-3 font-semibold text-center w-16">Bobot</th><th className="px-4 py-3 font-semibold w-20">Status</th><th className="px-4 py-3 text-right font-semibold w-28">Aksi</th>
+                    <th className="px-4 py-3 font-semibold">Soal</th><th className="px-4 py-3 font-semibold">Kompetensi</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Jenis</th><th className="px-4 py-3 font-semibold hidden lg:table-cell">Jawaban</th><th className="px-4 py-3 font-semibold text-center w-16">Bobot</th><th className="px-4 py-3 font-semibold w-20">Status</th><th className="px-4 py-3 text-left font-semibold w-28 translate-x-[25px]">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#262636]">

@@ -72,7 +72,7 @@ function Monitoring() {
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase tracking-wider text-slate-500">
                 <tr className="border-b border-[#262636] bg-[#09090E]">
-                  <th className="px-5 py-3.5 font-semibold">Peserta</th><th className="px-5 py-3.5 font-semibold">Asesmen</th><th className="px-5 py-3.5 font-semibold">Progress / Nilai</th><th className="px-5 py-3.5 font-semibold">Status</th>
+                  <th className="px-5 py-3.5 font-semibold">Peserta</th><th className="px-5 py-3.5 font-semibold">Asesmen</th><th className="px-5 py-3.5 font-semibold">Progress / Nilai</th><th className="px-5 py-3.5 font-semibold translate-x-[5px]">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#262636]">

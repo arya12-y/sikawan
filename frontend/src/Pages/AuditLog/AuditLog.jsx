@@ -67,7 +67,7 @@ function AuditLog() {
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase tracking-wider text-slate-500">
                 <tr className="border-b border-[#262636] bg-[#09090E]">
-                  <th className="px-5 py-3.5 font-semibold">Waktu</th><th className="px-5 py-3.5 font-semibold">User</th><th className="px-5 py-3.5 font-semibold">Aksi</th><th className="px-5 py-3.5 font-semibold">Modul</th>
+                  <th className="px-5 py-3.5 font-semibold">Waktu</th><th className="px-5 py-3.5 font-semibold">User</th><th className="px-5 py-3.5 font-semibold translate-x-[15px]">Aksi</th><th className="px-5 py-3.5 font-semibold">Modul</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#262636]">

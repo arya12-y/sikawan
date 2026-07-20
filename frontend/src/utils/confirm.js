@@ -1,6 +1,7 @@
 import Swal from 'sweetalert2'
 
 export async function confirmAction({ title, text, confirmButtonText = 'Ya, lanjutkan', icon = 'warning' }) {
+  const isDark = document.documentElement.classList.contains('dark')
   const result = await Swal.fire({
     title,
     text,
@@ -11,10 +12,13 @@ export async function confirmAction({ title, text, confirmButtonText = 'Ya, lanj
     reverseButtons: true,
     focusCancel: true,
     buttonsStyling: false,
+    background: isDark ? '#14141E' : '#FFFFFF',
+    color: isDark ? '#F1F5F9' : '#0F172A',
+    iconColor: icon === 'warning' ? '#F59E0B' : icon === 'error' ? '#EF4444' : '#6366F1',
     customClass: {
-      popup: 'rounded-4',
-      confirmButton: 'btn btn-danger px-4 ms-2',
-      cancelButton: 'btn btn-light border px-4',
+      popup: 'swal-premium',
+      confirmButton: 'swal-confirm-btn',
+      cancelButton: 'swal-cancel-btn',
     },
   })
 
