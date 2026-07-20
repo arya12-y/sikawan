@@ -3,39 +3,17 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import api from '../../api/axios'
 
+function Field({ label, name, type = 'text', rules, register, error }) {
+  const placeholders = { email: 'Masukkan email', token: 'Masukkan token reset', password: 'Masukkan kata sandi baru', password_confirmation: 'Ulangi kata sandi baru' }
+  return <div><label className="block text-sm font-semibold text-slate-300">{label} <span className="text-rose-400">*</span></label><input className={`mt-2 w-full rounded-xl border bg-[#09090E] px-4 py-3 text-sm outline-none transition focus:bg-[#14141E] focus:ring-4 ${error ? 'border-rose-400 focus:ring-rose-100' : 'border-[#1E1E2E] focus:border-indigo-500 focus:ring-indigo-100'}`} type={type} placeholder={placeholders[name] || `Masukkan ${label.toLowerCase()}`} {...register(name, rules)} />{error && <p className="mt-2 text-xs font-medium text-rose-600">{error.message}</p>}</div>
+}
+
 function ResetPassword() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm({ defaultValues: { email: params.get('email') || '', token: params.get('token') || '' } })
   const [note, setNote] = useState(null)
-
-  const onSubmit = async (data) => {
-    setNote(null)
-    try {
-      const res = await api.post('/reset-password', data)
-      navigate('/login', { replace: true, state: { notice: res.data?.message || 'Password berhasil diperbarui. Silakan login dengan password baru.' } })
-    } catch (e) {
-      setNote(e.response?.data?.message || 'Reset password gagal. Periksa token dan email Anda.')
-    }
-  }
-
-  return (
-    <div className="login-dark"><div className="login-dark-container">
-      <div className="login-dark-brand"><div className="login-dark-logo"><i className="bi bi-shield-lock-fill" /></div><h1 className="login-dark-title">SIKAWAN</h1><p className="login-dark-subtitle">Buat kata sandi baru</p></div>
-      <div className="login-dark-card">
-        <div className="login-dark-card-header"><h2>Reset Kata Sandi</h2><p>Masukkan token dari email dan kata sandi baru Anda.</p></div>
-        {note && <div className="login-note login-note-danger"><i className="bi bi-exclamation-triangle-fill" /><span>{note}</span></div>}
-        <form onSubmit={handleSubmit(onSubmit)} className="login-dark-form">
-          <div className="login-dark-field"><label className="login-dark-label">Email</label><div className="login-dark-input-wrap"><i className="bi bi-envelope" /><input className="login-dark-input" type="email" {...register('email', { required: 'Email wajib diisi' })} /></div>{errors.email && <span className="login-dark-error">{errors.email.message}</span>}</div>
-          <div className="login-dark-field"><label className="login-dark-label">Token Reset</label><div className="login-dark-input-wrap"><i className="bi bi-key" /><input className="login-dark-input" {...register('token', { required: 'Token wajib diisi' })} /></div>{errors.token && <span className="login-dark-error">{errors.token.message}</span>}</div>
-          <div className="login-dark-field"><label className="login-dark-label">Kata Sandi Baru</label><div className="login-dark-input-wrap"><i className="bi bi-lock" /><input className="login-dark-input" type="password" {...register('password', { required: 'Password wajib diisi', minLength: { value: 8, message: 'Minimal 8 karakter' } })} /></div>{errors.password && <span className="login-dark-error">{errors.password.message}</span>}</div>
-          <div className="login-dark-field"><label className="login-dark-label">Konfirmasi Kata Sandi</label><div className="login-dark-input-wrap"><i className="bi bi-shield-check" /><input className="login-dark-input" type="password" {...register('password_confirmation', { required: 'Konfirmasi password wajib diisi', validate: (value) => value === getValues('password') || 'Konfirmasi password tidak sama' })} /></div>{errors.password_confirmation && <span className="login-dark-error">{errors.password_confirmation.message}</span>}</div>
-          <button className="login-dark-btn" disabled={isSubmitting}>{isSubmitting ? 'Memproses...' : 'Simpan Kata Sandi Baru'}</button>
-        </form>
-        <div className="login-dark-footer"><Link to="/login">Kembali ke Login</Link></div>
-      </div>
-    </div></div>
-  )
+  const onSubmit = async (data) => { setNote(null); try { const res = await api.post('/reset-password', data); navigate('/login', { replace: true, state: { notice: res.data?.message || 'Password berhasil diperbarui. Silakan login dengan password baru.' } }) } catch (e) { setNote(e.response?.data?.message || 'Reset password gagal. Periksa token dan email Anda.') } }
+  return <main className="flex min-h-screen items-center justify-center bg-slate-950 px-8 py-12"><section className="w-full max-w-md rounded-3xl bg-[#14141E] p-10 shadow-2xl shadow-black/30"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 text-xl font-bold text-indigo-700">S</div><p className="mt-7 text-sm font-semibold tracking-[0.2em] text-indigo-400">SIKAWAN</p><h1 className="mt-2 text-3xl font-bold text-slate-100">Reset kata sandi</h1><p className="mt-3 text-sm leading-6 text-slate-400">Masukkan token dari email dan kata sandi baru Anda.</p>{note && <div role="alert" className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{note}</div>}<form onSubmit={handleSubmit(onSubmit)} className="mt-7 space-y-5"><Field label="Email" name="email" type="email" register={register} error={errors.email} rules={{ required: 'Email wajib diisi' }} /><Field label="Token Reset" name="token" register={register} error={errors.token} rules={{ required: 'Token wajib diisi' }} /><Field label="Kata Sandi Baru" name="password" type="password" register={register} error={errors.password} rules={{ required: 'Password wajib diisi', minLength: { value: 8, message: 'Minimal 8 karakter' } }} /><Field label="Konfirmasi Kata Sandi" name="password_confirmation" type="password" register={register} error={errors.password_confirmation} rules={{ required: 'Konfirmasi password wajib diisi', validate: (value) => value === getValues('password') || 'Konfirmasi password tidak sama' }} /><button className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-700 disabled:opacity-60" disabled={isSubmitting}>{isSubmitting ? 'Memproses...' : 'Simpan Kata Sandi Baru'}</button></form><Link className="mt-7 inline-block text-sm font-semibold text-indigo-400 hover:text-indigo-800" to="/login">← Kembali ke Login</Link></section></main>
 }
-
 export default ResetPassword

@@ -16,6 +16,7 @@ import BidangPage from './Pages/Master/Bidang/Bidang'
 import WalidataPage from './Pages/Master/Walidata/Walidata'
 import PengujiPage from './Pages/Master/Penguji/Penguji'
 import Users from './Pages/Master/Users'
+import Roles from './Pages/Roles/Roles'
 import Materi from './Pages/Materi/Materi'
 import MateriList from './Pages/Materi/MateriList'
 import MateriQuiz from './Pages/Materi/MateriQuiz'
@@ -24,27 +25,19 @@ import Notifikasi from './Pages/Notifikasi/Notifikasi'
 import Sertifikat from './Pages/Sertifikat/Sertifikat'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { canAccessPath, firstAllowedPath } from './utils/access'
+import { Building2, UsersIcon, Briefcase, Star, BarChart3, Award, Tags, Shield, UserCheck, UserCog, ArrowRight } from 'lucide-react'
 
-function ProtectedRoute() {
-  const { isAuthenticated, loading } = useAuth()
-  const location = useLocation()
-
-  if (loading) return <LoadingSpinner />
-  if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location }} />
-
-  return <AdminLayout />
-}
-
-function AccessRoute({ children }) {
-  const { user } = useAuth()
-  const location = useLocation()
-
-  if (!canAccessPath(user, location.pathname)) return <Navigate to={firstAllowedPath(user)} replace />
-
-  return children
-}
-
-const protect = (element) => <AccessRoute>{element}</AccessRoute>
+const masterItems = [
+  { path: 'opd', label: 'OPD', desc: 'Kelola data Organisasi Perangkat Daerah', icon: Building2, color: 'from-blue-500 to-cyan-500' },
+  { path: 'bidang', label: 'Bidang', desc: 'Kelola data Bidang', icon: Briefcase, color: 'from-emerald-500 to-green-500' },
+  { path: 'jabatan', label: 'Jabatan', desc: 'Kelola data Jabatan', icon: UserCog, color: 'from-amber-500 to-orange-500' },
+  { path: 'kompetensi', label: 'Kompetensi', desc: 'Kelola data Kompetensi', icon: Star, color: 'from-violet-500 to-pink-500' },
+  { path: 'level', label: 'Level', desc: 'Kelola data Level', icon: BarChart3, color: 'from-red-500 to-rose-500' },
+  { path: 'badge', label: 'Badge', desc: 'Kelola data Badge', icon: Award, color: 'from-yellow-500 to-amber-500' },
+  { path: 'kategori', label: 'Kategori', desc: 'Kelola data Kategori', icon: Tags, color: 'from-indigo-500 to-purple-500' },
+  { path: 'walidata', label: 'Walidata', desc: 'Kelola data Walidata', icon: UsersIcon, color: 'from-sky-500 to-blue-500' },
+  { path: 'penguji', label: 'Penguji', desc: 'Kelola data Penguji', icon: UserCheck, color: 'from-teal-500 to-emerald-500' },
+]
 
 const baseFields = [
   { name: 'nama', label: 'Nama', required: true },
@@ -63,57 +56,60 @@ const routes = [
   { path: 'penguji', element: <PengujiPage /> },
 ]
 
-const masterIcons = {
-  opd: { icon: 'bi-building', color: 'linear-gradient(135deg, #3b82f6, #06b6d4)' },
-  bidang: { icon: 'bi-diagram-2', color: 'linear-gradient(135deg, #10b981, #22c55e)' },
-  jabatan: { icon: 'bi-person-badge', color: 'linear-gradient(135deg, #f59e0b, #f97316)' },
-  kompetensi: { icon: 'bi-star', color: 'linear-gradient(135deg, #8b5cf6, #d946ef)' },
-  level: { icon: 'bi-bar-chart-steps', color: 'linear-gradient(135deg, #ef4444, #f43f5e)' },
-  badge: { icon: 'bi-patch-check', color: 'linear-gradient(135deg, #eab308, #f59e0b)' },
-  kategori: { icon: 'bi-tags', color: 'linear-gradient(135deg, #6366f1, #a855f7)' },
-  walidata: { icon: 'bi-person-gear', color: 'linear-gradient(135deg, #0ea5e9, #3b82f6)' },
-  penguji: { icon: 'bi-person-check', color: 'linear-gradient(135deg, #14b8a6, #10b981)' },
+function ProtectedRoute() {
+  const { isAuthenticated, loading } = useAuth()
+  const location = useLocation()
+  if (loading) return <LoadingSpinner />
+  if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location }} />
+  return <AdminLayout />
 }
+
+function AccessRoute({ children }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  if (!canAccessPath(user, location.pathname)) return <Navigate to={firstAllowedPath(user)} replace />
+  return children
+}
+
+const protect = (element) => <AccessRoute>{element}</AccessRoute>
 
 function MasterData() {
   return (
     <div>
-      <div className="mb-4">
-        <h4 className="fw-bold mb-1">Master Data</h4>
-        <p className="text-muted">Kelola seluruh data referensi dan pengaturan sistem.</p>
+      <div className="mb-6">
+        <h4 className="text-xl font-bold text-gray-900">Master Data</h4>
+        <p className="text-sm text-gray-500 mt-1">Kelola seluruh data referensi dan pengaturan sistem.</p>
       </div>
-      <div className="row g-4">
-        {routes.map((item) => {
-          const config = masterIcons[item.path] || { icon: 'bi-database', color: 'linear-gradient(135deg, #64748b, #94a3b8)' }
-          return (
-            <div className="col-md-6 col-xl-4" key={item.path}>
-              <Link className="card admin-card text-decoration-none h-100 pembelajaran-card border-0" to={`/${item.path}`}>
-                <div className="card-body d-flex align-items-center p-4">
-                  <div className="pembelajaran-icon-sm me-3 shadow-sm" style={{ background: config.color }}>
-                    <i className={`bi ${config.icon}`}></i>
-                  </div>
-                  <div>
-                    <h5 className="fw-bold mb-1 text-dark text-capitalize">{item.path.replaceAll('-', ' ')}</h5>
-                    <p className="text-muted small mb-0">Kelola data {item.path.replaceAll('-', ' ')}</p>
-                  </div>
-                </div>
-              </Link>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {masterItems.map((item) => (
+          <Link
+            key={item.path}
+            to={`/${item.path}`}
+            className="group flex items-center gap-4 p-5 bg-white rounded-xl border border-gray-200 hover:border-indigo-200 hover:shadow-md transition-all"
+          >
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shrink-0 shadow-sm`}>
+              <item.icon className="w-5.5 h-5.5 text-white" />
             </div>
-          )
-        })}
-        <div className="col-md-6 col-xl-4">
-          <Link className="card admin-card text-decoration-none h-100 pembelajaran-card border-0" to="/users">
-            <div className="card-body d-flex align-items-center p-4">
-              <div className="pembelajaran-icon-sm me-3 shadow-sm" style={{ background: 'linear-gradient(135deg, #475569, #64748b)' }}>
-                <i className="bi bi-people-fill"></i>
-              </div>
-              <div>
-                <h5 className="fw-bold mb-1 text-dark">Pengguna</h5>
-                <p className="text-muted small mb-0">Kelola akun dan hak akses pengguna</p>
-              </div>
+            <div className="flex-1 min-w-0">
+              <h5 className="font-semibold text-gray-900 text-sm">{item.label}</h5>
+              <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
             </div>
+            <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500 transition-colors shrink-0" />
           </Link>
-        </div>
+        ))}
+        <Link
+          to="/users"
+          className="group flex items-center gap-4 p-5 bg-white rounded-xl border border-gray-200 hover:border-indigo-200 hover:shadow-md transition-all"
+        >
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shrink-0 shadow-sm">
+            <Shield className="w-5.5 h-5.5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h5 className="font-semibold text-gray-900 text-sm">Pengguna</h5>
+            <p className="text-xs text-gray-500 mt-0.5">Kelola akun dan hak akses pengguna</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500 transition-colors shrink-0" />
+        </Link>
       </div>
     </div>
   )
@@ -132,6 +128,7 @@ function AppRoutes() {
         <Route path="master-data" element={protect(<MasterData />)} />
         {routes.map((item) => <Route key={item.path} path={item.path} element={protect(item.element)} />)}
         <Route path="users" element={protect(<Users />)} />
+        <Route path="roles" element={protect(<Roles />)} />
         <Route path="pembelajaran" element={protect(<Materi />)} />
         <Route path="pembelajaran/video" element={protect(<MateriList jenis="video" />)} />
         <Route path="pembelajaran/pdf" element={protect(<MateriList jenis="pdf" />)} />

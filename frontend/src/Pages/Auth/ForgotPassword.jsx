@@ -6,41 +6,7 @@ import api from '../../api/axios'
 function ForgotPassword() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm()
   const [note, setNote] = useState(null)
-
-  const onSubmit = async (data) => {
-    setNote(null)
-    try {
-      const res = await api.post('/forgot-password', data)
-      setNote({ type: 'success', message: res.data?.message || 'Instruksi reset password telah dikirim ke email Anda.' })
-    } catch (e) {
-      setNote({ type: 'danger', message: e.response?.data?.message || 'Gagal mengirim instruksi reset password.' })
-    }
-  }
-
-  return (
-    <div className="login-dark">
-      <div className="login-dark-container">
-        <div className="login-dark-brand">
-          <div className="login-dark-logo"><i className="bi bi-key-fill" /></div>
-          <h1 className="login-dark-title">SIKAWAN</h1>
-          <p className="login-dark-subtitle">Pemulihan akses akun</p>
-        </div>
-        <div className="login-dark-card">
-          <div className="login-dark-card-header"><h2>Lupa Kata Sandi?</h2><p>Masukkan email akun Anda. Kami akan mengirim instruksi untuk membuat kata sandi baru.</p></div>
-          {note && <div className={`login-note login-note-${note.type}`}><i className={`bi ${note.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}`} /><span>{note.message}</span></div>}
-          <form onSubmit={handleSubmit(onSubmit)} className="login-dark-form">
-            <div className="login-dark-field">
-              <label className="login-dark-label">Email Akun</label>
-              <div className="login-dark-input-wrap"><i className="bi bi-envelope" /><input className={`login-dark-input ${errors.email ? 'login-dark-input-error' : ''}`} type="email" placeholder="nama@email.com" {...register('email', { required: 'Email wajib diisi' })} /></div>
-              {errors.email && <span className="login-dark-error">{errors.email.message}</span>}
-            </div>
-            <button className="login-dark-btn" disabled={isSubmitting}>{isSubmitting ? 'Mengirim...' : 'Kirim Instruksi Reset'}</button>
-          </form>
-          <div className="login-dark-footer"><Link to="/login"><i className="bi bi-arrow-left me-1"></i>Kembali ke Login</Link></div>
-        </div>
-      </div>
-    </div>
-  )
+  const onSubmit = async (data) => { setNote(null); try { const res = await api.post('/forgot-password', data); setNote({ type: 'success', message: res.data?.message || 'Instruksi reset password telah dikirim ke email Anda.' }) } catch (e) { setNote({ type: 'danger', message: e.response?.data?.message || 'Gagal mengirim instruksi reset password.' }) } }
+  return <main className="flex min-h-screen items-center justify-center bg-slate-950 px-8 py-12"><section className="w-full max-w-md rounded-3xl bg-[#14141E] p-10 shadow-2xl shadow-black/30"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 text-xl font-bold text-indigo-700">S</div><p className="mt-7 text-sm font-semibold tracking-[0.2em] text-indigo-400">SIKAWAN</p><h1 className="mt-2 text-3xl font-bold text-slate-100">Lupa kata sandi?</h1><p className="mt-3 text-sm leading-6 text-slate-400">Masukkan email akun Anda. Kami akan mengirim instruksi untuk membuat kata sandi baru.</p>{note && <div role="alert" className={`mt-6 rounded-xl border px-4 py-3 text-sm ${note.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>{note.message}</div>}<form onSubmit={handleSubmit(onSubmit)} className="mt-7"><label className="block text-sm font-semibold text-slate-300">Email Akun <span className="text-rose-400">*</span></label><input className={`mt-2 w-full rounded-xl border bg-[#09090E] px-4 py-3 text-sm outline-none transition focus:bg-[#14141E] focus:ring-4 ${errors.email ? 'border-rose-400 focus:ring-rose-100' : 'border-[#1E1E2E] focus:border-indigo-500 focus:ring-indigo-100'}`} type="email" placeholder="nama@email.com" {...register('email', { required: 'Email wajib diisi' })} />{errors.email && <p className="mt-2 text-xs font-medium text-rose-600">{errors.email.message}</p>}<button className="mt-6 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-700 disabled:opacity-60" disabled={isSubmitting}>{isSubmitting ? 'Mengirim...' : 'Kirim Instruksi Reset'}</button></form><Link className="mt-7 inline-block text-sm font-semibold text-indigo-400 hover:text-indigo-800" to="/login">← Kembali ke Login</Link></section></main>
 }
-
 export default ForgotPassword

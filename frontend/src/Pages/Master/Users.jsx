@@ -1,92 +1,37 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { Search } from 'lucide-react'
 import api from '../../api/axios'
+import { can } from '../../utils/can'
 import { useAuth } from '../../hooks/useAuth'
 import { confirmAction } from '../../utils/confirm'
 
 const roles = ['Super Admin', 'Admin Diskominfo', 'Penguji', 'Walidata', 'Pimpinan']
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
 const getRole = (user) => user.roles?.[0]?.name ?? user.roles?.[0] ?? 'Walidata'
+const inputClass = 'w-full rounded-xl border border-[#1E1E2E] bg-[#14141E] px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
+const buttonClass = 'inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60'
 
 function Users() {
-  const { user: currentUser } = useAuth()
-  const canManage = currentUser?.roles?.some((role) => ['Super Admin', 'Admin Diskominfo'].includes(role.name ?? role))
-  const [rows, setRows] = useState([])
-  const [search, setSearch] = useState('')
-  const [showForm, setShowForm] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const { register, handleSubmit, reset } = useForm()
-
-  const load = useCallback(async () => {
-    try {
-      const res = await api.get('/users', { params: search ? { search } : {} })
-      setRows(normalize(res.data))
-    } catch (e) { alert(e.response?.data?.message || 'Gagal memuat') }
-  }, [search])
-
-  useEffect(() => { queueMicrotask(load) }, [load])
-
-  const update = async (user, data) => {
-    try { await api.patch(`/users/${user.id}`, data); load() } catch (e) { alert(e.response?.data?.message || 'Gagal') }
-  }
-  const updateRole = async (user, role) => {
-    if (role === getRole(user)) return
-    if (await confirmAction({ title: 'Ubah role pengguna?', text: `Role ${user.name} akan diubah menjadi ${role}.`, confirmButtonText: 'Ya, ubah', icon: 'question' })) update(user, { roles: [role] })
-  }
-  const toggleActive = async (user) => {
-    const isActive = !user.is_active
-    if (await confirmAction({ title: `${isActive ? 'Aktifkan' : 'Nonaktifkan'} pengguna?`, text: `${user.name} akan ${isActive ? 'dapat' : 'tidak dapat'} mengakses sistem.`, confirmButtonText: isActive ? 'Ya, aktifkan' : 'Ya, nonaktifkan', icon: isActive ? 'question' : 'warning' })) update(user, { is_active: isActive })
-  }
+  const { user } = useAuth(); const [rows, setRows] = useState([]); const [roleList, setRoleList] = useState(roles); const [search, setSearch] = useState(''); const [showForm, setShowForm] = useState(false); const [saving, setSaving] = useState(false); const { register, handleSubmit, reset } = useForm()
+  const load = useCallback(async () => { try { const [u, r] = await Promise.all([api.get('/users', { params: search ? { search } : {} }), api.get('/roles')]); setRows(normalize(u.data)); const names = r.data.map((role) => role.name); setRoleList(names.length ? names : roles) } catch (e) { alert(e.response?.data?.message || 'Gagal memuat') } }, [search])
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      queueMicrotask(load)
+      return
+    }
+    const timer = setTimeout(() => {
+      load()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [load])
+  const update = async (user, data) => { try { await api.patch(`/users/${user.id}`, data); load() } catch (e) { alert(e.response?.data?.message || 'Gagal') } }
+  const updateRole = async (user, role) => { if (role !== getRole(user) && await confirmAction({ title: 'Ubah role pengguna?', text: `Role ${user.name} akan diubah menjadi ${role}.`, confirmButtonText: 'Ya, ubah', icon: 'question' })) update(user, { roles: [role] }) }
+  const toggleActive = async (user) => { const isActive = !user.is_active; if (await confirmAction({ title: `${isActive ? 'Aktifkan' : 'Nonaktifkan'} pengguna?`, text: `${user.name} akan ${isActive ? 'dapat' : 'tidak dapat'} mengakses sistem.`, confirmButtonText: isActive ? 'Ya, aktifkan' : 'Ya, nonaktifkan', icon: isActive ? 'question' : 'warning' })) update(user, { is_active: isActive }) }
   const openCreate = () => { reset({ name: '', email: '', password: '', nip: '', phone: '', role: 'Admin Diskominfo', is_active: 1 }); setShowForm(true) }
-
-  const createUser = async (data) => {
-    setSaving(true)
-    try {
-      await api.post('/users', { ...data, roles: [data.role], is_active: Number(data.is_active) === 1 })
-      setShowForm(false); load()
-    } catch (e) { const m = e.response?.data?.errors ? Object.values(e.response.data.errors).flat().join('\n') : e.response?.data?.message; alert(m || 'Gagal') } finally { setSaving(false) }
-  }
-
-  return (
-    <div>
-      {!showForm && <div className="card shadow-sm border-0">
-        <div className="card-body">
-          <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-            <div className="d-flex align-items-start gap-3"><Link className="btn btn-outline-secondary btn-sm mt-1" to="/master-data"><i className="bi bi-arrow-left me-1"></i>Kembali</Link><div><h4 className="fw-bold mb-1">Pengguna & Hak Akses</h4><p className="text-muted mb-0">Buat akun internal dan atur role pengguna sistem.</p></div></div>
-            {canManage && <button className="btn btn-primary" onClick={openCreate}><i className="bi bi-person-plus me-1"></i>Tambah Pengguna</button>}
-          </div>
-          <div className="row g-2 mb-4">
-            <div className="col-md-6"><div className="input-group"><span className="input-group-text bg-light border-end-0"><i className="bi bi-search"></i></span><input className="form-control border-start-0 ps-0" placeholder="Cari nama, email..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} /></div></div>
-            <div className="col-md-3"><button className="btn btn-outline-secondary w-100" onClick={load}><i className="bi bi-arrow-clockwise me-1"></i>Refresh</button></div>
-          </div>
-          <div className="table-responsive"><table className="table table-hover align-middle"><thead className="table-light"><tr><th>Nama</th><th>Email</th><th>NIP</th><th>Role</th><th>Status</th><th className="text-end">Aksi</th></tr></thead>
-            <tbody>{rows.map((item) => <tr key={item.id}>
-              <td className="fw-semibold">{item.name}</td><td>{item.email}</td><td>{item.nip || '-'}</td>
-              <td>{canManage ? <select className="form-select form-select-sm" value={getRole(item)} onChange={(e) => updateRole(item, e.target.value)}>{roles.map((role) => <option key={role}>{role}</option>)}</select> : getRole(item)}</td>
-              <td><span className={`badge ${item.is_active ? 'text-bg-success' : 'text-bg-secondary'}`}>{item.is_active ? 'Aktif' : 'Menunggu Verifikasi'}</span></td>
-              <td className="text-end text-nowrap">{canManage ? <button className={`btn btn-sm ${item.is_active ? 'btn-outline-secondary' : 'btn-success'}`} onClick={() => toggleActive(item)} title={item.is_active ? 'Nonaktifkan' : 'Aktifkan'}><i className={`bi ${item.is_active ? 'bi-person-dash' : 'bi-person-check'}`}></i></button> : '-'}</td>
-            </tr>)}</tbody>
-          </table></div>
-        </div>
-      </div>}
-
-      {showForm && <div className="card shadow-sm border-0 mt-4"><div className="card-body p-4"><form onSubmit={handleSubmit(createUser)}>
-        <div className="d-flex justify-content-between align-items-center mb-4"><h5 className="fw-bold mb-0">Tambah Pengguna Internal</h5><button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowForm(false)}><i className="bi bi-arrow-left me-1"></i>Kembali</button></div>
-        <div className="alert alert-info small">Pendaftaran publik hanya untuk Walidata. Gunakan menu ini untuk membuat akun Admin, Penguji, Pimpinan, atau akun internal lain.</div>
-        <div className="row g-3">
-          <div className="col-12"><label className="form-label fw-semibold">Nama</label><input className="form-control" {...register('name', { required: true })} /></div>
-          <div className="col-12"><label className="form-label fw-semibold">Email</label><input className="form-control" type="email" {...register('email', { required: true })} /></div>
-          <div className="col-12"><label className="form-label fw-semibold">Password</label><input className="form-control" type="password" {...register('password', { required: true, minLength: 8 })} /></div>
-          <div className="col-md-6"><label className="form-label fw-semibold">NIP</label><input className="form-control" {...register('nip')} /></div>
-          <div className="col-md-6"><label className="form-label fw-semibold">No. HP</label><input className="form-control" {...register('phone')} /></div>
-          <div className="col-md-6"><label className="form-label fw-semibold">Role</label><select className="form-select" {...register('role')}>{roles.map((role) => <option key={role}>{role}</option>)}</select></div>
-          <div className="col-md-6"><label className="form-label fw-semibold">Status Akun</label><select className="form-select" {...register('is_active')}><option value={1}>Aktif</option><option value={0}>Menunggu Verifikasi</option></select></div>
-        </div>
-        <div className="d-flex justify-content-end gap-2 mt-4"><button type="button" className="btn btn-outline-secondary" onClick={() => setShowForm(false)}>Batal</button><button className="btn btn-primary" disabled={saving}>{saving ? <><span className="spinner-border spinner-border-sm me-1" role="status"></span>Menyimpan...</> : 'Buat Akun'}</button></div>
-      </form></div></div>}
-    </div>
-  )
+  const createUser = async (data) => { setSaving(true); try { await api.post('/users', { ...data, roles: [data.role], is_active: Number(data.is_active) === 1 }); setShowForm(false); load() } catch (e) { alert(e.response?.data?.errors ? Object.values(e.response.data.errors).flat().join('\n') : e.response?.data?.message || 'Gagal') } finally { setSaving(false) } }
+  return <div>{!showForm && <section className="rounded-2xl border border-[#1E1E2E] bg-[#14141E] shadow-sm"><div className="p-6"><div className="mb-6 flex items-start justify-between"><div className="flex items-start gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-indigo-400">Master data</p><h1 className="mt-1 text-2xl font-bold text-slate-100">Pengguna & Hak Akses</h1><p className="mt-1 text-sm text-slate-400">Buat akun internal dan atur role pengguna sistem.</p></div></div>{can(user, 'pengguna.create') && <button className={`${buttonClass} bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 focus:ring-indigo-200`} onClick={openCreate}>+ Tambah Pengguna</button>}</div><div className="mb-6 grid grid-cols-12 gap-3"><div className="relative col-span-4"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" /><input className="w-full rounded-xl border border-[#262636] bg-[#1A1A26] py-2.5 pl-10 pr-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" placeholder="Cari nama, email..." value={search} onChange={(e) => setSearch(e.target.value)} /></div></div><div className="overflow-hidden rounded-xl border border-[#1E1E2E]"><table className="w-full text-left text-sm"><thead className="bg-[#09090E] text-xs uppercase tracking-wider text-slate-400"><tr>{['Nama', 'Email', 'NIP', 'Role', 'Status', 'Aksi'].map((label) => <th className="px-5 py-3.5 font-semibold last:text-right" key={label}>{label}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map((item) => <tr className="hover:bg-[#14141E]/[0.03]/80" key={item.id}><td className="px-5 py-4 font-semibold text-slate-100">{item.name}</td><td className="px-5 py-4 text-slate-400">{item.email}</td><td className="px-5 py-4 text-slate-400">{item.nip || '-'}</td><td className="px-5 py-4">{can(user, 'pengguna.update') ? <select className="rounded-lg border border-[#1E1E2E] bg-[#14141E] px-2.5 py-1.5 text-xs font-medium text-slate-300 outline-none focus:border-indigo-500" value={getRole(item)} onChange={(e) => updateRole(item, e.target.value)}>{roleList.map((role) => <option key={role}>{role}</option>)}</select> : getRole(item)}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#1A1A26] text-slate-400'}`}>{item.is_active ? 'Aktif' : 'Menunggu Verifikasi'}</span></td><td className="px-5 py-4 text-right">{can(user, 'pengguna.update') ? <button className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${item.is_active ? 'border border-[#1E1E2E] text-slate-400 hover:bg-[#14141E]/[0.03]' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`} onClick={() => toggleActive(item)}>{item.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button> : '-'}</td></tr>)}</tbody></table></div></div></section>}{showForm && <section className="mt-6 rounded-2xl border border-[#1E1E2E] bg-[#14141E] shadow-sm"><div className="p-6"><form onSubmit={handleSubmit(createUser)}><div className="mb-6 flex items-center justify-between border-b border-[#1E1E2E] pb-4"><h2 className="text-xl font-bold text-slate-100">Tambah Pengguna Internal</h2></div><div className="mb-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">Pendaftaran publik hanya untuk Walidata. Gunakan menu ini untuk membuat akun Admin, Penguji, Pimpinan, atau akun internal lain.</div><div className="grid grid-cols-2 gap-5">{[['name', 'Nama', 'text'], ['email', 'Email', 'email'], ['password', 'Password', 'password'], ['nip', 'NIP', 'text'], ['phone', 'No. HP', 'text']].map(([name, label, type]) => <div key={name}><label className="mb-2 block text-sm font-semibold text-slate-300">{label}{['name', 'email', 'password'].includes(name) && <span className="text-rose-400"> *</span>}</label><input className={inputClass} type={type} placeholder={`Masukkan ${label.toLowerCase()}`} {...register(name, { required: ['name', 'email', 'password'].includes(name), minLength: name === 'password' ? 8 : undefined })} /></div>)}<div><label className="mb-2 block text-sm font-semibold text-slate-300">Role</label><select className={inputClass} {...register('role')}>{roleList.map((role) => <option key={role}>{role}</option>)}</select></div><div><label className="mb-2 block text-sm font-semibold text-slate-300">Status Akun</label><select className={inputClass} {...register('is_active')}><option value={1}>Aktif</option><option value={0}>Menunggu Verifikasi</option></select></div></div><div className="mt-6 flex justify-end gap-3 border-t border-[#1E1E2E] pt-5"><button type="button" className={`${buttonClass} border border-[#1E1E2E] text-slate-400 hover:bg-[#14141E]/[0.03]`} onClick={() => setShowForm(false)}>Batal</button><button className={`${buttonClass} bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-200`} disabled={saving}>{saving ? 'Menyimpan...' : 'Buat Akun'}</button></div></form></div></section>}</div>
 }
-
 export default Users

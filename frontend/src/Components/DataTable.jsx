@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
 
 function DataTable({ columns = [], data = [], pageSize = 10, title, actions, emptyText = 'Tidak ada data' }) {
   const [search, setSearch] = useState('')
@@ -24,43 +25,50 @@ function DataTable({ columns = [], data = [], pageSize = 10, title, actions, emp
   }
 
   return (
-    <div className="card admin-card">
-      <div className="card-header admin-card-header">
+    <div className="overflow-hidden rounded-2xl border border-[#1E1E2E] bg-[#14141E] shadow-sm">
+      <div className="flex flex-col gap-4 border-b border-[#1E1E2E] p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          {title && <h5 className="card-title mb-0">{title}</h5>}
-          <span className="text-muted small">{filteredData.length} data ditemukan</span>
+          {title && <h5 className="text-lg font-bold text-slate-100">{title}</h5>}
+          <span className="text-sm text-slate-400">{filteredData.length} data ditemukan</span>
         </div>
-        <div className="d-flex gap-2 align-items-center">
-          <div className="input-group input-group-sm table-search">
-            <span className="input-group-text"><i className="bi bi-search"></i></span>
-            <input className="form-control" value={search} onChange={handleSearch} placeholder="Cari data..." />
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="h-4 w-4 text-slate-400" />
+            </div>
+            <input 
+              className="block w-full rounded-xl border border-[#1E1E2E] bg-[#09090E] py-2 pl-10 pr-3 text-sm text-slate-100 focus:border-indigo-500 focus:bg-[#14141E] focus:outline-none focus:ring-2 focus:ring-indigo-100 sm:w-64" 
+              value={search} 
+              onChange={handleSearch} 
+              placeholder="Cari data..." 
+            />
           </div>
           {actions}
         </div>
       </div>
-      <div className="table-responsive">
-        <table className="table table-hover align-middle mb-0">
-          <thead>
-            <tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-[#09090E] text-xs uppercase tracking-wider text-slate-400">
+            <tr>{columns.map((column) => <th className="px-6 py-4 font-semibold" key={column.key}>{column.label}</th>)}</tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100 bg-[#14141E]">
             {visibleData.length > 0 ? visibleData.map((row, index) => (
-              <tr key={row.id ?? index}>
-                {columns.map((column) => <td key={column.key}>{column.render ? column.render(row, index) : row[column.key]}</td>)}
+              <tr className="transition hover:bg-[#14141E]/[0.03]" key={row.id ?? index}>
+                {columns.map((column) => <td className="px-6 py-4 text-slate-300" key={column.key}>{column.render ? column.render(row, index) : row[column.key]}</td>)}
               </tr>
             )) : (
               <tr>
-                <td colSpan={columns.length} className="text-center text-muted py-5">{emptyText}</td>
+                <td colSpan={columns.length} className="px-6 py-12 text-center text-slate-400">{emptyText}</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      <div className="card-footer admin-card-footer">
-        <span className="small text-muted">Halaman {currentPage} dari {totalPages}</span>
-        <div className="btn-group btn-group-sm">
-          <button className="btn btn-outline-secondary" type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Sebelumnya</button>
-          <button className="btn btn-outline-secondary" type="button" disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Berikutnya</button>
+      <div className="flex items-center justify-between border-t border-[#1E1E2E] bg-[#09090E] px-6 py-4">
+        <span className="text-sm text-slate-400">Halaman <span className="font-medium text-slate-100">{currentPage}</span> dari <span className="font-medium text-slate-100">{totalPages}</span></span>
+        <div className="flex gap-2">
+          <button className="rounded-lg border border-[#1E1E2E] bg-[#14141E] px-3 py-1.5 text-sm font-medium text-slate-300 shadow-sm transition hover:bg-[#14141E]/[0.03] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Sebelumnya</button>
+          <button className="rounded-lg border border-[#1E1E2E] bg-[#14141E] px-3 py-1.5 text-sm font-medium text-slate-300 shadow-sm transition hover:bg-[#14141E]/[0.03] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Berikutnya</button>
         </div>
       </div>
     </div>

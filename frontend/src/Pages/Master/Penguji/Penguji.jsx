@@ -1,96 +1,34 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { AlertCircle, Search, Pencil, Trash2 } from 'lucide-react'
 import api from '../../../api/axios'
+import { can } from '../../../utils/can'
+import { useAuth } from '../../../hooks/useAuth'
 import { confirmDelete } from '../../../utils/confirm'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
-
+const inputClass = 'w-full rounded-xl border border-[#1E1E2E] bg-[#14141E] px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
+const buttonClass = 'inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60'
 function Penguji() {
-  const [rows, setRows] = useState([])
-  const [users, setUsers] = useState([])
-  const [search, setSearch] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [editing, setEditing] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const { register, handleSubmit, reset } = useForm()
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await api.get('/pengujis', { params: search ? { search } : {} })
-      setRows(normalize(res.data))
-    } catch (e) {
-      alert(e.response?.data?.message || 'Gagal memuat data')
-    } finally { setLoading(false) }
-  }, [search])
-
-  const loadRefs = useCallback(async () => {
-    try { const res = await api.get('/users?per_page=200'); setUsers(normalize(res.data)) } catch { setUsers([]) }
-  }, [])
-
-  useEffect(() => { queueMicrotask(() => { load(); loadRefs() }) }, [load, loadRefs])
-
-  const openCreate = () => { setEditing(null); reset({ user_id: '', nip: '', bidang_keahlian: '', bio: '', is_active: 1 }); setShowForm(true) }
-  const openEdit = (row) => { setEditing(row); reset({ user_id: row.user_id || '', nip: row.nip || '', bidang_keahlian: row.bidang_keahlian || '', bio: row.bio || '', is_active: row.is_active ? 1 : 0 }); setShowForm(true) }
-
-  const save = async (data) => {
-    setSaving(true)
-    const payload = { user_id: Number(data.user_id), nip: data.nip || null, bidang_keahlian: data.bidang_keahlian || null, bio: data.bio || null, is_active: Number(data.is_active) === 1 }
-    try {
-      if (editing?.id) await api.put(`/pengujis/${editing.id}`, payload); else await api.post('/pengujis', payload)
-      setShowForm(false); load()
-    } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan') } finally { setSaving(false) }
-  }
-
-  const remove = async (row) => {
-    if (!await confirmDelete(row.user?.name || getUserName(row.user_id) || 'Penguji')) return
-    try { await api.delete(`/pengujis/${row.id}`); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menghapus') }
-  }
-
-  const getUserName = (id) => users.find((u) => u.id === Number(id))?.name || '-'
-
-  return (
-    <div>
-      {!showForm && <div className="card shadow-sm border-0">
-        <div className="card-body">
-          <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-            <div className="d-flex align-items-center gap-3"><Link className="btn btn-outline-secondary btn-sm" to="/master-data"><i className="bi bi-arrow-left me-1"></i>Kembali</Link><h4 className="fw-bold mb-0">Penguji</h4></div>
-            <button className="btn btn-primary" onClick={openCreate}><i className="bi bi-plus-lg me-1"></i>Tambah</button>
-          </div>
-          <div className="row g-2 mb-4">
-            <div className="col-md-5"><div className="input-group"><span className="input-group-text bg-light border-end-0"><i className="bi bi-search"></i></span><input className="form-control border-start-0 ps-0" placeholder="Cari penguji..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} /></div></div>
-            <div className="col-md-3"><button className="btn btn-outline-secondary w-100" onClick={load}><i className="bi bi-arrow-clockwise me-1"></i>Refresh</button></div>
-          </div>
-          {loading ? <div className="text-center py-5 text-muted">Memuat...</div> : (
-            <div className="table-responsive"><table className="table table-hover align-middle">
-              <thead className="table-light"><tr><th>Nama</th><th>NIP</th><th>Bidang Keahlian</th><th>Status</th><th className="text-end">Aksi</th></tr></thead>
-              <tbody>{rows.map((row) => <tr key={row.id}>
-                <td className="fw-semibold">{row.user?.name || getUserName(row.user_id)}</td>
-                <td>{row.nip || '-'}</td>
-                <td>{row.bidang_keahlian || '-'}</td>
-                <td>{row.is_active ? <span className="badge bg-success">Aktif</span> : <span className="badge bg-secondary">Nonaktif</span>}</td>
-                <td className="text-end text-nowrap"><button className="btn btn-sm btn-outline-primary me-1" onClick={() => openEdit(row)} title="Edit"><i className="bi bi-pencil"></i></button><button className="btn btn-sm btn-outline-danger" onClick={() => remove(row)} title="Hapus"><i className="bi bi-trash"></i></button></td>
-              </tr>)}</tbody>
-            </table></div>
-          )}
-        </div>
-      </div>}
-
-      {showForm && <div className="card shadow-sm border-0 mt-4"><div className="card-body p-4"><form onSubmit={handleSubmit(save)}>
-        <div className="d-flex justify-content-between align-items-center mb-4"><h5 className="fw-bold mb-0">{editing ? 'Edit' : 'Tambah'} Penguji</h5><button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowForm(false)}><i className="bi bi-arrow-left me-1"></i>Kembali</button></div>
-        <div className="row g-3">
-          <div className="col-md-6"><label className="form-label fw-semibold">Nama User <span className="text-danger">*</span></label><select className="form-select" {...register('user_id', { required: true })}><option value="">Pilih User</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}</select></div>
-          <div className="col-md-6"><label className="form-label fw-semibold">NIP</label><input className="form-control" {...register('nip')} /></div>
-          <div className="col-md-6"><label className="form-label fw-semibold">Bidang Keahlian</label><input className="form-control" {...register('bidang_keahlian')} /></div>
-          <div className="col-md-6"><label className="form-label fw-semibold">Status</label><select className="form-select" {...register('is_active')}><option value={1}>Aktif</option><option value={0}>Nonaktif</option></select></div>
-          <div className="col-12"><label className="form-label fw-semibold">Bio</label><textarea className="form-control" rows="3" {...register('bio')}></textarea></div>
-        </div>
-        <div className="d-flex justify-content-end gap-2 mt-4"><button type="button" className="btn btn-outline-secondary" onClick={() => setShowForm(false)}>Batal</button><button className="btn btn-primary" disabled={saving}>{saving ? <><span className="spinner-border spinner-border-sm me-1" role="status"></span>Menyimpan...</> : 'Simpan'}</button></div>
-      </form></div></div>}
-    </div>
-  )
+  const { user } = useAuth()
+  const [rows, setRows] = useState([]); const [users, setUsers] = useState([]); const [search, setSearch] = useState(''); const [loading, setLoading] = useState(true); const [showForm, setShowForm] = useState(false); const [editing, setEditing] = useState(null); const [saving, setSaving] = useState(false); const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = useForm()
+  const load = useCallback(async () => { setLoading(true); try { const res = await api.get('/pengujis', { params: search ? { search } : {} }); setRows(normalize(res.data)) } catch (e) { alert(e.response?.data?.message || 'Gagal memuat data') } finally { setLoading(false) } }, [search])
+  const loadRefs = useCallback(async () => { try { const res = await api.get('/users?per_page=200'); setUsers(normalize(res.data)) } catch { setUsers([]) } }, [])
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      queueMicrotask(() => { load(); loadRefs() })
+      return
+    }
+    const timer = setTimeout(() => {
+      load()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [load, loadRefs]); const getUserName = (id) => users.find((u) => u.id === Number(id))?.name || '-'
+  const openCreate = () => { setEditing(null); reset({ user_id: '', nip: '', bidang_keahlian: '', bio: '', is_active: 1 }); setShowForm(true) }; const openEdit = (row) => { setEditing(row); reset({ user_id: row.user_id || '', nip: row.nip || '', bidang_keahlian: row.bidang_keahlian || '', bio: row.bio || '', is_active: row.is_active ? 1 : 0 }); setShowForm(true) }
+  const save = async (data) => { setSaving(true); const payload = { user_id: Number(data.user_id), nip: data.nip || null, bidang_keahlian: data.bidang_keahlian || null, bio: data.bio || null, is_active: Number(data.is_active) === 1 }; try { if (editing?.id) await api.put(`/pengujis/${editing.id}`, payload); else await api.post('/pengujis', payload); setShowForm(false); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan') } finally { setSaving(false) } }
+  const remove = async (row) => { if (!await confirmDelete(row.user?.name || getUserName(row.user_id) || 'Penguji')) return; try { await api.delete(`/pengujis/${row.id}`); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menghapus') } }
+  return <div>{!showForm && <section className="rounded-2xl border border-[#1E1E2E] bg-[#14141E] shadow-sm"><div className="p-6"><div className="mb-6 flex items-center justify-between"><div className="flex items-center gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-indigo-400">Master data</p><h1 className="mt-1 text-2xl font-bold text-slate-100">Penguji</h1></div></div>{can(user, 'penguji.create') && <button className={`${buttonClass} bg-indigo-600 text-white hover:bg-indigo-700`} onClick={openCreate}>+ Tambah</button>}</div><div className="mb-6 grid grid-cols-12 gap-3"><div className="relative col-span-4"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" /><input className="w-full rounded-xl border border-[#262636] bg-[#1A1A26] py-2.5 pl-10 pr-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" placeholder="Cari penguji..." value={search} onChange={(e) => setSearch(e.target.value)} /></div></div>{loading ? <div className="py-16 text-center text-sm text-slate-400">Memuat...</div> : <div className="overflow-hidden rounded-xl border border-[#1E1E2E]"><table className="w-full text-left text-sm"><thead className="bg-[#09090E] text-xs uppercase tracking-wider text-slate-400"><tr>{['Nama', 'NIP', 'Bidang Keahlian', 'Status', 'Aksi'].map((x) => <th className="px-5 py-3.5 last:text-right" key={x}>{x}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr className="hover:bg-[#14141E]/[0.03]/80" key={row.id}><td className="px-5 py-4 font-semibold text-slate-100">{row.user?.name || getUserName(row.user_id)}</td><td className="px-5 py-4 text-slate-400">{row.nip || '-'}</td><td className="px-5 py-4 text-slate-400">{row.bidang_keahlian || '-'}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#1A1A26] text-slate-400'}`}>{row.is_active ? 'Aktif' : 'Nonaktif'}</span></td><td className="px-5 py-4 text-right">{can(user, 'penguji.update') && <button onClick={() => openEdit(row)} className="mr-2 inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-4 w-4" /></button>}{can(user, 'penguji.delete') && <button onClick={() => remove(row)} className="inline-flex items-center justify-center rounded-xl border border-rose-600/20 p-2 text-sm text-rose-400 transition-colors hover:bg-rose-500/10" title="Hapus"><Trash2 className="h-4 w-4" /></button>}</td></tr>)}</tbody></table></div>}</div></section>}{showForm && <section className="mt-6 rounded-2xl border border-[#1E1E2E] bg-[#14141E] shadow-sm"><div className="p-6"><form onSubmit={handleSubmit(save)}><div className="mb-6 flex items-center justify-between border-b border-[#1E1E2E] pb-4"><h2 className="text-xl font-bold text-slate-100">{editing ? 'Edit' : 'Tambah'} Penguji</h2></div>{isSubmitted && Object.keys(errors).length > 0 && <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400 mb-4"><AlertCircle className="inline-block h-4 w-4 mr-1.5 -mt-0.5" />Harap isi semua field yang wajib diisi (tanda bintang merah).</div>}<div className="grid grid-cols-2 gap-5"><div><label className="mb-2 block text-sm font-semibold text-slate-300">Nama User <span className="text-rose-400">*</span></label><select className={inputClass} {...register('user_id', { required: true })}><option value="">Pilih User</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}</select></div><div><label className="mb-2 block text-sm font-semibold text-slate-300">NIP</label><input className={inputClass} placeholder="Masukkan NIP" {...register('nip')} /></div><div><label className="mb-2 block text-sm font-semibold text-slate-300">Bidang Keahlian</label><input className={inputClass} placeholder="Masukkan bidang keahlian" {...register('bidang_keahlian')} /></div><div><label className="mb-2 block text-sm font-semibold text-slate-300">Status</label><select className={inputClass} {...register('is_active')}><option value={1}>Aktif</option><option value={0}>Nonaktif</option></select></div><div className="col-span-2"><label className="mb-2 block text-sm font-semibold text-slate-300">Bio</label><textarea className={inputClass} rows="3" placeholder="Masukkan bio" {...register('bio')}></textarea></div></div><div className="mt-6 flex justify-end gap-3 border-t border-[#1E1E2E] pt-5"><button type="button" className={`${buttonClass} border border-[#1E1E2E] text-slate-400 hover:bg-[#14141E]/[0.03]`} onClick={() => setShowForm(false)}>Batal</button><button className={`${buttonClass} bg-indigo-600 text-white hover:bg-indigo-700`} disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button></div></form></div></section>}</div>
 }
-
 export default Penguji

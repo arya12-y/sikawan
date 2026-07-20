@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Bell, ArrowRight, CheckCircle } from 'lucide-react'
 import api from '../api/axios'
 
 function NotificationDropdown() {
@@ -43,46 +44,52 @@ function NotificationDropdown() {
   const unreadCount = rows.filter((r) => !r.is_read).length
 
   return (
-    <div className="dropdown">
-      <button className="btn btn-light position-relative" type="button" onClick={() => setOpen(!open)} data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
-        <i className="bi bi-bell"></i>
-        {unreadCount > 0 && <span className="notification-dot"></span>}
+    <div className="relative">
+      <button 
+        className="relative flex h-9 w-9 items-center justify-center text-slate-400 transition hover:text-indigo-400 focus:outline-none" 
+        type="button" 
+        onClick={() => setOpen(!open)}
+      >
+        <Bell className="h-4.5 w-4.5" />
+        {unreadCount > 0 && <span className="absolute right-2.5 top-2.5 flex h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white"></span>}
       </button>
-      <div className={`dropdown-menu dropdown-menu-end shadow border-0 p-0 notification-dropdown-menu ${open ? 'show' : ''}`} style={{ width: 320, maxHeight: 400, overflowY: 'auto' }}>
-        <div className="d-flex justify-content-between align-items-center p-3 border-bottom bg-light sticky-top">
-          <h6 className="mb-0 fw-bold">Notifikasi</h6>
-          {unreadCount > 0 && (
-            <button className="btn btn-link btn-sm p-0 text-decoration-none" onClick={markAllRead}>
-              Tandai Semua Dibaca
-            </button>
-          )}
-        </div>
-        <div className="list-group list-group-flush">
-          {rows.length === 0 ? (
-            <div className="text-center p-4 text-muted small">Tidak ada notifikasi</div>
-          ) : (
-            rows.map((row) => (
-              <div key={row.id} className={`list-group-item list-group-item-action ${row.is_read ? '' : 'bg-light'}`}>
-                <div className="d-flex justify-content-between align-items-start mb-1">
-                  <strong className={`small ${row.is_read ? 'text-muted' : 'text-primary'}`}>{row.judul}</strong>
-                  <small className="text-muted ms-2" style={{ fontSize: '0.7rem' }}>{new Date(row.created_at).toLocaleDateString('id-ID')}</small>
+      {open && (
+        <div className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-[#1E1E2E] bg-[#14141E] py-2 shadow-xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#1E1E2E] px-4 pb-3 pt-2">
+            <h6 className="text-sm font-bold text-slate-100">Notifikasi</h6>
+            {unreadCount > 0 && (
+              <button className="text-xs font-semibold text-indigo-400 hover:text-indigo-800" onClick={markAllRead}>
+                Tandai Semua Dibaca
+              </button>
+            )}
+          </div>
+          <div className="max-h-96 overflow-y-auto">
+            {rows.length === 0 ? (
+              <div className="p-6 text-center text-sm text-slate-400">Tidak ada notifikasi</div>
+            ) : (
+              rows.map((row) => (
+                <div key={row.id} className={`group border-b border-slate-50 px-4 py-3 last:border-0 transition hover:bg-[#14141E]/[0.03] ${row.is_read ? '' : 'bg-indigo-500/10/30'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <strong className={`text-sm ${row.is_read ? 'text-slate-400 font-medium' : 'text-indigo-900 font-semibold'}`}>{row.judul}</strong>
+                    <span className="shrink-0 text-[10px] text-slate-400">{new Date(row.created_at).toLocaleDateString('id-ID')}</span>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{row.pesan}</p>
+                  <div className="mt-2 flex items-center justify-between">
+                    {row.link ? (
+                      <a href={row.link} className="text-xs font-medium text-indigo-400 hover:text-indigo-700 inline-flex items-center">Lihat Detail <ArrowRight className="h-3 w-3 ml-1" /></a>
+                    ) : <div></div>}
+                    {!row.is_read && (
+                      <button className="flex h-6 w-6 items-center justify-center rounded-full text-indigo-400 hover:bg-indigo-100 transition" onClick={(e) => markRead(row.id, e)} title="Tandai sudah dibaca">
+                        <CheckCircle className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p className="mb-1 small text-secondary" style={{ lineHeight: 1.3 }}>{row.pesan}</p>
-                <div className="d-flex justify-content-between align-items-center mt-2">
-                  {row.link ? (
-                    <a href={row.link} className="small text-decoration-none">Lihat Detail <i className="bi bi-arrow-right"></i></a>
-                  ) : <div></div>}
-                  {!row.is_read && (
-                    <button className="btn btn-link btn-sm p-0 text-decoration-none" onClick={(e) => markRead(row.id, e)}>
-                      <i className="bi bi-circle text-primary"></i>
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

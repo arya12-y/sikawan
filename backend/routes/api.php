@@ -25,7 +25,11 @@ use App\Http\Controllers\Api\MonitoringController;
 use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\PengujiController;
+use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SertifikatController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WalidataController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +42,8 @@ Route::get('sertifikat/verify/{nomor}', [SertifikatController::class, 'verify'])
 Route::get('materi/{materi}/file', [MateriController::class, 'serveFile']);
 Route::get('materi/{materi}/download', [MateriController::class, 'downloadFile']);
 Route::get('materi/{materi}/thumbnail', [MateriController::class, 'serveThumbnail']);
+Route::get('auth/{provider}/redirect', [SocialAuthController::class, 'redirect']);
+Route::get('auth/{provider}/callback', [SocialAuthController::class, 'callback']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('me', [AuthController::class, 'me']);
@@ -87,4 +93,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('laporan/export-excel', [LaporanController::class, 'exportExcel']);
     Route::post('notifikasis/mark-all-read', [NotifikasiController::class, 'markAllRead']);
     Route::post('notifikasis/{notifikasi}/mark-read', [NotifikasiController::class, 'markRead']);
+    Route::apiResource('roles', RoleController::class);
+    Route::get('permissions', [PermissionController::class, 'index']);
 });
