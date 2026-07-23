@@ -57,10 +57,7 @@ class AssessmentService
 
         $nilai = $totalBobot > 0 ? round(($totalNilai / $totalBobot) * 100) : 0;
 
-        $peserta->update([
-            'nilai' => $nilai,
-            'lulus' => $nilai >= (float) ($peserta->asesmen?->nilai_lulus ?? 0),
-        ]);
+        $peserta->update(['nilai' => $nilai]);
 
         return $peserta->refresh();
     }

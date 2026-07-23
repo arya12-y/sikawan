@@ -102,11 +102,26 @@ class AsesmenController extends CrudController
         $peserta = PesertaAsesmen::findOrFail($pesertaId);
         abort_unless($peserta->user_id === $request->user()->id, 403);
 
-        $peserta->loadMissing('jawabanPesertas.bankSoal');
-        $essayKosong = $peserta->jawabanPesertas->filter(fn ($j) =>
-            $j->bankSoal?->jenis === 'essay' && empty(trim($j->jawaban ?? ''))
-        );
-        abort_if($essayKosong->isNotEmpty(), 422, 'Jawab semua soal essay terlebih dahulu sebelum mengumpulkan');
+        $peserta->load('asesmen.bankSoals', 'jawabanPesertas.bankSoal');
+
+        $essayIds = collect();
+        foreach ($peserta->asesmen->bankSoals as $s) {
+            if ($s->jenis === 'essay') $essayIds->push($s->id);
+        }
+
+        $answeredEssayIds = collect();
+        $essayKosong = collect();
+        foreach ($peserta->jawabanPesertas as $j) {
+            if ($j->bankSoal && $j->bankSoal->jenis === 'essay') {
+                $answeredEssayIds->push($j->bank_soal_id);
+                if (empty(trim($j->jawaban ?? ''))) {
+                    $essayKosong->push($j);
+                }
+            }
+        }
+
+        $essayBelumDijawab = $essayIds->diff($answeredEssayIds);
+        abort_if($essayBelumDijawab->isNotEmpty() || $essayKosong->isNotEmpty(), 422, 'Jawab semua soal essay terlebih dahulu sebelum mengumpulkan');
 
         $peserta = DB::transaction(function () use ($request, $service, $pesertaId) {
             $peserta = PesertaAsesmen::findOrFail($pesertaId);
@@ -165,12 +180,20 @@ class AsesmenController extends CrudController
             ->where('asesmen_id', $peserta->asesmen_id)
             ->delete();
 
+        \App\Models\Wawancara::where('peserta_asesmen_id', $peserta->id)->delete();
+        \App\Models\NilaiKompetensi::where('user_id', $peserta->user_id)
+            ->where('asesmen_id', $peserta->asesmen_id)
+            ->delete();
+
         $peserta->update([
             'status' => 'belum_mulai',
             'nilai' => null,
             'lulus' => null,
             'waktu_mulai' => null,
             'waktu_selesai' => null,
+            'approved_by' => null,
+            'approved_at' => null,
+            'catatan_approve' => null,
         ]);
 
         AuditLogService::log('reset', 'PesertaAsesmen', 'Reset ujian oleh '.$request->user()->name, [

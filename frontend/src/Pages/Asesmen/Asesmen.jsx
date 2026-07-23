@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { AlertCircle as AlertCircleIcon, ClipboardCheck, Clock, Award, BookOpen, Plus, X, Pencil, Trash2, XCircle } from 'lucide-react'
@@ -14,6 +14,7 @@ const labelClass = 'block text-sm font-medium text-slate-300 mb-1.5'
 
 function Asesmen() {
   const navigate = useNavigate()
+  const submitRef = useRef()
   const [asesmens, setAsesmens] = useState([])
   const [kompetensis, setKompetensis] = useState([])
   const [levels, setLevels] = useState([])
@@ -28,6 +29,7 @@ function Asesmen() {
   const [asesmenLulus, setAsesmenLulus] = useState(null)
   const [asesmenNilai, setAsesmenNilai] = useState(null)
   const [asesmenStatus, setAsesmenStatus] = useState(null)
+  const [schedule, setSchedule] = useState(null)
   const [ready, setReady] = useState(false)
   const { user } = useAuth()
   const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = useForm()
@@ -46,12 +48,31 @@ function Asesmen() {
     setAsesmenStatus(status?.data?.asesmen_status || null)
     setAsesmenLulus(status?.data?.asesmen_lulus ?? null)
     setAsesmenNilai(status?.data?.asesmen_nilai ?? null)
+    setSchedule(status?.data?.schedule ?? null)
     setReady(true)
   }, [])
   useEffect(() => { queueMicrotask(() => load()) }, [load])
 
-  const submitExam = useCallback(async (auto = false) => {
-    if (!auto && !await confirmAction({ title: 'Kumpulkan asesmen?', text: 'Jawaban yang sudah dikirim tidak dapat diubah lagi.', confirmButtonText: 'Ya, kumpulkan', icon: 'question' })) return
+  const submitExam = async (auto = false) => {
+    if (!auto) {
+      const belumDijawab = questions.filter(s =>
+        !s.jenis || !String(answers[s.id] || '').trim()
+      )
+      if (belumDijawab.length > 0) {
+        const isDark = document.documentElement.classList.contains('dark')
+        Swal.fire({
+          icon: 'warning',
+          title: 'Soal Belum Dijawab',
+          text: `Ada ${belumDijawab.length} soal yang masih kosong (${belumDijawab.filter(s => s.jenis === 'essay').length} essay, ${belumDijawab.filter(s => s.jenis !== 'essay').length} PG). Jawab terlebih dahulu.`,
+          confirmButtonText: 'Oke',
+          background: isDark ? '#14141E' : '#FFFFFF',
+          color: isDark ? '#F1F5F9' : '#0F172A',
+          confirmButtonColor: '#6366f1',
+        })
+        return
+      }
+      if (!await confirmAction({ title: 'Kumpulkan asesmen?', text: 'Jawaban yang sudah dikirim tidak dapat diubah lagi.', confirmButtonText: 'Ya, kumpulkan', icon: 'question' })) return
+    }
     try {
       const submitRes = await api.post(`/peserta-asesmens/${peserta.id}/submit`)
       setPeserta(null)
@@ -64,7 +85,8 @@ function Asesmen() {
       const isDark = document.documentElement.classList.contains('dark')
       Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal submit asesmen', confirmButtonText: 'Tutup', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
     }
-  }, [load, peserta])
+  }
+  submitRef.current = submitExam
   useEffect(() => {
     if (asesmenLulus === true) {
       const t = setTimeout(() => navigate('/sertifikat'), 3000)
@@ -74,11 +96,11 @@ function Asesmen() {
   useEffect(() => {
     if (!secondsLeft || !peserta || peserta.status === 'selesai') return
     const timer = setInterval(() => setSecondsLeft((value) => {
-      if (value <= 1) { clearInterval(timer); submitExam(true); return 0 }
+      if (value <= 1) { clearInterval(timer); submitRef.current(true); return 0 }
       return value - 1
     }), 1000)
     return () => clearInterval(timer)
-  }, [secondsLeft, peserta, submitExam])
+  }, [secondsLeft, peserta])
 
   const formatTime = (value) => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
   const getName = (items, id) => items.find((item) => item.id === id)?.nama || '-'
@@ -195,6 +217,16 @@ function Asesmen() {
         <Clock className="mb-4 h-16 w-16 text-slate-500 opacity-30" />
         <h2 className="text-xl font-bold text-slate-100">Asesmen Belum Tersedia</h2>
         <p className="mt-2 text-sm text-slate-400">Asesmen hanya dapat diakses pada jadwal yang telah ditentukan.</p>
+        {schedule?.exam_start && (
+          <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-3 text-center">
+            <p className="text-xs text-amber-400/80 mb-0.5">Jadwal Ujian</p>
+            <p className="text-sm font-semibold text-amber-400">
+              {new Date(schedule.exam_start).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              {' — '}
+              {new Date(schedule.exam_start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+        )}
       </div>
     )
   }

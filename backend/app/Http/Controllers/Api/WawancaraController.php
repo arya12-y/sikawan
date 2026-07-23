@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\NotifikasiHelper;
 use App\Http\Controllers\Controller;
 use App\Models\PesertaAsesmen;
 use App\Models\Wawancara;
@@ -56,6 +57,9 @@ class WawancaraController extends Controller
             'catatan_jadwal' => $data['catatan_jadwal'] ?? null,
             'status' => 'terjadwal',
         ]);
+
+        $tanggal = \Carbon\Carbon::parse($data['waktu_mulai'])->locale('id')->isoFormat('dddd, D MMMM Y HH:mm');
+        NotifikasiHelper::send($peserta->user_id, 'Wawancara Dijadwalkan', "Wawancara untuk asesmen telah dijadwalkan pada {$tanggal}.", 'info', '/penilaian');
 
         return response()->json($wawancara->load(['pesertaAsesmen.user', 'penguji']), 201);
     }

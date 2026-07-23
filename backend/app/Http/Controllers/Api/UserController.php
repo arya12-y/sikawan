@@ -64,8 +64,9 @@ class UserController extends CrudController
         return response()->json($user->load($this->with));
     }
 
-    public function destroy(Request $request, $id)
+    public function destroy($id)
     {
+        $request = request();
         $user = User::withTrashed()->findOrFail($id);
         $old = $user->toArray();
 
