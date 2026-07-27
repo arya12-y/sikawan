@@ -271,10 +271,8 @@ function MateriList({ jenis }) {
   const [thumbnailPreview, setThumbnailPreview] = useState(null)
   const [saving, setSaving] = useState(false)
   const [notif, setNotif] = useState(null)
-  const [status, setStatus] = useState(null)
-  const [phaseState, setPhaseState] = useState(null)
-  const { phase: schedulePhase, pretestDone: schedulePretestDone } = useSchedule()
-  const phase = schedulePhase || phaseState
+  const { phase: schedulePhase, pretestDone: schedulePretestDone, status: scheduleStatus } = useSchedule()
+  const phase = schedulePhase
   const [userLevelUrutan, setUserLevelUrutan] = useState(null)
   const [userLevelName, setUserLevelName] = useState(null)
   const [completedIds, setCompletedIds] = useState(new Set())
@@ -289,7 +287,7 @@ function MateriList({ jenis }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const params = { jenis, per_page: 100 }
+      const params = { jenis, per_page: 50 }
       if (search) params.search = search
       const res = await api.get('/materis', { params })
       const data = res.data?.data ?? res.data
@@ -323,18 +321,12 @@ function MateriList({ jenis }) {
   }, [load, loadRefs])
 
   useEffect(() => {
-    api.get('/my-status').then(res => {
-      const s = res.data
-      setStatus(s)
-      setPhaseState(s?.phase)
-      if (s?.level_id && s?.level_name) {
-        setUserLevelName(s.level_name)
-        const lvl = levels.find(l => l.id === s.level_id)
-        setUserLevelUrutan(lvl?.urutan ?? null)
-      }
-    }).catch(() => {})
-  }, [levels])
-  useEffect(() => { if (schedulePhase) setPhaseState(schedulePhase) }, [schedulePhase])
+    if (scheduleStatus?.level_id && scheduleStatus?.level_name) {
+      setUserLevelName(scheduleStatus.level_name)
+      const lvl = levels.find(l => l.id === scheduleStatus.level_id)
+      setUserLevelUrutan(lvl?.urutan ?? null)
+    }
+  }, [scheduleStatus, levels])
 
   const openCreate = () => { setEditing(null); setShowForm(true) }
   const openEdit = (row) => { setEditing(row); setShowForm(true) }
@@ -423,12 +415,7 @@ function MateriList({ jenis }) {
           confirmButtonColor: '#6366f1',
           customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' },
         })
-        const statusRes = await api.get('/my-status')
-        const s = statusRes.data
-        setStatus(s)
-        setUserLevelName(s?.level_name ?? '')
-        const lvl = levels.find(l => l.id === s?.level_id)
-        setUserLevelUrutan(lvl?.urutan ?? null)
+        setUserLevelName(data?.level_up?.new_level ?? '')
         load()
       }
     } catch { /* silently fail */ }
@@ -436,7 +423,7 @@ function MateriList({ jenis }) {
 
   const Icon = config.icon
 
-  const pretestDone = schedulePretestDone || status?.pretest_done
+  const pretestDone = schedulePretestDone
   const phaseBlocked = !isAdmin && phase && (phase === 'exam' || (phase === 'pretest' && !pretestDone))
   const hasUserLevel = userLevelUrutan !== null
 

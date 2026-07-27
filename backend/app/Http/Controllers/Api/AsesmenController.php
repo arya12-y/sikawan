@@ -218,7 +218,9 @@ class AsesmenController extends CrudController
     {
         abort_unless($this->canGradeEssay($request), 403);
 
-        $jawabans = JawabanPeserta::with([
+        $perPage = (int) $request->query('per_page', 15);
+
+        $paginator = JawabanPeserta::with([
             'bankSoal:id,pertanyaan,pembahasan,jawaban_benar',
             'pesertaAsesmen.asesmen:id,judul',
             'pesertaAsesmen.user:id,name',
@@ -226,24 +228,31 @@ class AsesmenController extends CrudController
             ->whereHas('bankSoal', fn ($q) => $q->where('jenis', 'essay'))
             ->whereHas('pesertaAsesmen', fn ($q) => $q->whereIn('status', ['selesai', 'dinilai']))
             ->latest()
-            ->get()
-            ->map(fn ($j) => [
-                'id' => $j->id,
-                'peserta_id' => $j->peserta_asesmen_id,
-                'peserta_nama' => $j->pesertaAsesmen?->user?->name ?? '-',
-                'asesmen' => $j->pesertaAsesmen?->asesmen?->judul ?? '-',
-                'soal' => $j->bankSoal?->pertanyaan ?? '-',
-                'jawaban' => $j->jawaban,
-                'nilai' => $j->nilai,
-                'catatan_penguji' => $j->catatan_penguji,
-                'dinilai' => !is_null($j->dinilai_oleh),
-                'lulus' => $j->pesertaAsesmen?->lulus,
-                'pembahasan' => $j->bankSoal?->pembahasan,
-                'jawaban_benar' => $j->bankSoal?->jawaban_benar,
-                'created_at' => $j->created_at,
-            ]);
+            ->paginate($perPage);
 
-        return response()->json($jawabans);
+        $jawabans = collect($paginator->items())->map(fn ($j) => [
+            'id' => $j->id,
+            'peserta_id' => $j->peserta_asesmen_id,
+            'peserta_nama' => $j->pesertaAsesmen?->user?->name ?? '-',
+            'asesmen' => $j->pesertaAsesmen?->asesmen?->judul ?? '-',
+            'soal' => $j->bankSoal?->pertanyaan ?? '-',
+            'jawaban' => $j->jawaban,
+            'nilai' => $j->nilai,
+            'catatan_penguji' => $j->catatan_penguji,
+            'dinilai' => !is_null($j->dinilai_oleh),
+            'lulus' => $j->pesertaAsesmen?->lulus,
+            'pembahasan' => $j->bankSoal?->pembahasan,
+            'jawaban_benar' => $j->bankSoal?->jawaban_benar,
+            'created_at' => $j->created_at,
+        ]);
+
+        return response()->json([
+            'data' => $jawabans,
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+        ]);
     }
 
     public function gradeEssay(Request $request, AssessmentService $service, $jawabanId)

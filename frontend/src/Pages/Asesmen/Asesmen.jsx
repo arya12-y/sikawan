@@ -6,6 +6,7 @@ import api from '../../api/axios'
 import { confirmAction, confirmDelete } from '../../utils/confirm'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../hooks/useAuth'
+import { useSchedule } from '../../hooks/useSchedule'
 import { can } from '../../utils/can'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
@@ -32,23 +33,26 @@ function Asesmen() {
   const [schedule, setSchedule] = useState(null)
   const [ready, setReady] = useState(false)
   const { user } = useAuth()
+  const scheduleData = useSchedule()
   const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = useForm()
   const roles = Array.isArray(user?.roles) ? user.roles : []
   const isWalidata = roles.includes('Walidata')
   const questions = useMemo(() => peserta?.asesmen?.bank_soals || peserta?.asesmen?.bankSoals || [], [peserta])
   const answeredCount = Object.values(answers).filter((value) => String(value || '').trim() !== '').length
 
+  useEffect(() => {
+    if (scheduleData.phase && !phase) setPhase(scheduleData.phase)
+    if (scheduleData.asesmenStatus && !asesmenStatus) setAsesmenStatus(scheduleData.asesmenStatus)
+    if (scheduleData.asesmenLulus !== null && asesmenLulus === null) setAsesmenLulus(scheduleData.asesmenLulus)
+    if (scheduleData.asesmenNilai && !asesmenNilai) setAsesmenNilai(scheduleData.asesmenNilai)
+    if (scheduleData.schedule && !schedule) setSchedule(scheduleData.schedule)
+  }, [scheduleData, phase, asesmenStatus, asesmenLulus, asesmenNilai, schedule])
+
   const load = useCallback(async () => {
-    const [a, k, l, status] = await Promise.all([
+    const [a, k, l] = await Promise.all([
       api.get('/asesmens'), api.get('/kompetensis'), api.get('/levels'),
-      api.get('/my-status').catch(() => null),
     ])
     setAsesmens(normalize(a.data)); setKompetensis(normalize(k.data)); setLevels(normalize(l.data))
-    setPhase(status?.data?.phase || null)
-    setAsesmenStatus(status?.data?.asesmen_status || null)
-    setAsesmenLulus(status?.data?.asesmen_lulus ?? null)
-    setAsesmenNilai(status?.data?.asesmen_nilai ?? null)
-    setSchedule(status?.data?.schedule ?? null)
     setReady(true)
   }, [])
   useEffect(() => { queueMicrotask(() => load()) }, [load])
@@ -119,7 +123,16 @@ function Asesmen() {
       Swal.fire({ icon: 'warning', title: 'Tidak dapat memulai', text: msg, confirmButtonText: 'Mengerti', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
     } finally { setLoading(false) }
   }
-  const saveAnswer = async (soalId, value) => { setAnswers((state) => ({ ...state, [soalId]: value })); if (!peserta?.id) return; try { await api.post(`/peserta-asesmens/${peserta.id}/save-answer`, { bank_soal_id: soalId, jawaban: value }) } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan jawaban') } }
+  const saveAnswerRef = useRef({})
+  const saveAnswer = (soalId, value) => {
+    setAnswers((state) => ({ ...state, [soalId]: value }))
+    if (!peserta?.id) return
+    const key = `save-${soalId}`
+    if (saveAnswerRef.current[key]) clearTimeout(saveAnswerRef.current[key])
+    saveAnswerRef.current[key] = setTimeout(async () => {
+      try { await api.post(`/peserta-asesmens/${peserta.id}/save-answer`, { bank_soal_id: soalId, jawaban: value }) } catch (e) { /* silently fail */ }
+    }, 300)
+  }
 
   const resetExam = async (row) => {
     const isDark = document.documentElement.classList.contains('dark')
@@ -148,12 +161,8 @@ function Asesmen() {
   const isAdmin = !isWalidata
   const examLocked = isWalidata && phase && phase !== 'exam'
 
-  if (!ready) {
-    return <div className="flex items-center justify-center py-32"><div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>
-  }
-
   // Status: Menunggu penilaian essay oleh penguji
-  if (isWalidata && asesmenStatus === 'selesai' && asesmenLulus === null) {
+  if (ready && isWalidata && asesmenStatus === 'selesai' && asesmenLulus === null) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] border-b-amber-500/40 bg-[#14141E] p-8 text-center shadow-lg shadow-black/10">
@@ -170,7 +179,7 @@ function Asesmen() {
   }
 
   // Status: Lulus ✅
-  if (isWalidata && asesmenStatus === 'selesai' && asesmenLulus === true) {
+  if (ready && isWalidata && asesmenStatus === 'selesai' && asesmenLulus === true) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] border-b-emerald-500/40 bg-[#14141E] p-8 text-center shadow-lg shadow-black/10">
@@ -189,7 +198,7 @@ function Asesmen() {
   }
 
   // Status: Tidak Lulus ❌
-  if (isWalidata && asesmenStatus === 'selesai' && asesmenLulus === false) {
+  if (ready && isWalidata && asesmenStatus === 'selesai' && asesmenLulus === false) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] border-b-rose-500/40 bg-[#14141E] p-8 text-center shadow-lg shadow-black/10">
@@ -211,7 +220,7 @@ function Asesmen() {
   }
 
   // Status: Belum waktunya exam
-  if (examLocked) {
+  if (ready && examLocked) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-[#262636] bg-[#14141E] py-20 shadow-sm">
         <Clock className="mb-4 h-16 w-16 text-slate-500 opacity-30" />
@@ -257,7 +266,9 @@ function Asesmen() {
       {activeTab === 'list' && (
         <div className="rounded-2xl border border-[#262636] bg-[#14141E] shadow-sm">
           <div className="overflow-x-auto">
-            {asesmens.length === 0 ? (
+            {!ready ? (
+              <div className="flex items-center justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>
+            ) : asesmens.length === 0 ? (
               <div className="flex flex-col items-center py-16 text-slate-500"><ClipboardCheck className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada asesmen</p></div>
             ) : (
               <table className="w-full text-left text-sm">

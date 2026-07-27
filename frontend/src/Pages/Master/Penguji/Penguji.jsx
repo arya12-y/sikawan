@@ -15,17 +15,8 @@ function Penguji() {
   const load = useCallback(async () => { setLoading(true); try { const res = await api.get('/pengujis', { params: search ? { search } : {} }); setRows(normalize(res.data)) } catch (e) { alert(e.response?.data?.message || 'Gagal memuat data') } finally { setLoading(false) } }, [search])
   const loadRefs = useCallback(async () => { try { const res = await api.get('/users?per_page=200'); setUsers(normalize(res.data)) } catch { setUsers([]) } }, [])
   const isFirstRender = useRef(true)
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      queueMicrotask(() => { load(); loadRefs() })
-      return
-    }
-    const timer = setTimeout(() => {
-      load()
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [load, loadRefs]); const getUserName = (id) => users.find((u) => u.id === Number(id))?.name || '-'
+  useEffect(() => { queueMicrotask(() => { load(); loadRefs() }) }, [])
+  useEffect(() => { if (search) { const t = setTimeout(() => load(), 300); return () => clearTimeout(t) } }, [search]); const getUserName = (id) => users.find((u) => u.id === Number(id))?.name || '-'
   const openCreate = () => { setEditing(null); reset({ user_id: '', nip: '', bidang_keahlian: '', bio: '', is_active: 1 }); setShowForm(true) }; const openEdit = (row) => { setEditing(row); reset({ user_id: row.user_id || '', nip: row.nip || '', bidang_keahlian: row.bidang_keahlian || '', bio: row.bio || '', is_active: row.is_active ? 1 : 0 }); setShowForm(true) }
   const save = async (data) => { setSaving(true); const payload = { user_id: Number(data.user_id), nip: data.nip || null, bidang_keahlian: data.bidang_keahlian || null, bio: data.bio || null, is_active: Number(data.is_active) === 1 }; try { if (editing?.id) await api.put(`/pengujis/${editing.id}`, payload); else await api.post('/pengujis', payload); setShowForm(false); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan') } finally { setSaving(false) } }
   const remove = async (row) => { if (!await confirmDelete(row.user?.name || getUserName(row.user_id) || 'Penguji')) return; try { await api.delete(`/pengujis/${row.id}`); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menghapus') } }

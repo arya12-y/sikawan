@@ -20,7 +20,6 @@ export function useSchedule() {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [timeoutPassed, setTimeoutPassed] = useState(false)
-  const [tick, setTick] = useState(0)
   const intervalRef = useRef(null)
 
   const fetch = () => {
@@ -32,19 +31,17 @@ export function useSchedule() {
 
   useEffect(() => {
     fetch()
-    intervalRef.current = setInterval(fetch, 15000)
-    const tickRef = setInterval(() => setTick(t => t + 1), 5000)
-    const timeoutRef = setTimeout(() => setTimeoutPassed(true), 8000)
-    return () => { clearInterval(intervalRef.current); clearInterval(tickRef); clearTimeout(timeoutRef) }
+    intervalRef.current = setInterval(fetch, 60000)
+    const timeoutRef = setTimeout(() => setTimeoutPassed(true), 10000)
+    return () => { clearInterval(intervalRef.current); clearTimeout(timeoutRef) }
   }, [])
 
-  const serverPhase = status?.phase ?? null
-  const localPhase = useMemo(() => computeLocalPhase(status?.schedule), [status?.schedule, tick])
+  const localPhase = useMemo(() => computeLocalPhase(status?.schedule), [status?.schedule, status])
 
   return {
     status,
     loading,
-    phase: (localPhase || serverPhase) ?? (timeoutPassed ? 'none' : null),
+    phase: (localPhase || status?.phase) ?? (timeoutPassed ? 'none' : null),
     pretestDone: status?.pretest_done ?? false,
     lulus: status?.lulus ?? false,
     asesmenStatus: status?.asesmen_status ?? null,

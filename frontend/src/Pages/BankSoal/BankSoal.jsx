@@ -26,16 +26,22 @@ function BankSoal() {
   const [importText, setImportText] = useState('')
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef(null)
+  const isFirstRender = useRef(true)
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitted } } = useForm()
   const jenis = watch('jenis')
+  const searchRef = useRef(search)
+  const filterJenisRef = useRef(filterJenis)
+  const filterKompetensiRef = useRef(filterKompetensi)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (paramsOverride) => {
     setLoading(true)
     try {
-      const params = {}
-      if (search) params.search = search
-      if (filterJenis) params.jenis = filterJenis
-      if (filterKompetensi) params.kompetensi_id = filterKompetensi
+      const params = paramsOverride || {}
+      if (!paramsOverride) {
+        if (search) params.search = search
+        if (filterJenis) params.jenis = filterJenis
+        if (filterKompetensi) params.kompetensi_id = filterKompetensi
+      }
       const res = await api.get('/bank-soals', { params })
       setRows(normalize(res.data))
     } catch (e) { alert(e.response?.data?.message || 'Gagal memuat bank soal') } finally { setLoading(false) }
@@ -47,10 +53,16 @@ function BankSoal() {
     setLevels(normalize(l.data))
   }, [])
 
-  useEffect(() => { queueMicrotask(() => { load(); loadRefs() }) }, [load, loadRefs])
+  useEffect(() => { queueMicrotask(() => { load(); loadRefs(); isFirstRender.current = false }) }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => { if (search !== undefined) load() }, 300)
+    if (isFirstRender.current) return
+    const changed = search !== searchRef.current || filterJenis !== filterJenisRef.current || filterKompetensi !== filterKompetensiRef.current
+    searchRef.current = search
+    filterJenisRef.current = filterJenis
+    filterKompetensiRef.current = filterKompetensi
+    if (!changed) return
+    const t = setTimeout(() => load(), 300)
     return () => clearTimeout(t)
   }, [search, filterJenis, filterKompetensi, load])
 

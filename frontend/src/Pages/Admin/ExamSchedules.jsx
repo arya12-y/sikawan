@@ -16,6 +16,7 @@ function ExamSchedules() {
   const [showModal, setShowModal] = useState(false)
   const [current, setCurrent] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({
     title: '',
     pretest_start: '',
@@ -29,12 +30,15 @@ function ExamSchedules() {
   const { user } = useAuth()
 
   const load = useCallback(async () => {
+    setLoading(true)
     try {
       const [s, k] = await Promise.all([api.get('/exam-schedules'), api.get('/kompetensis')])
       setSchedules(normalize(s.data))
       setKompetensis(normalize(k.data))
     } catch (e) {
       // silently fail
+    } finally {
+      setLoading(false)
     }
   }, [])
   useEffect(() => { queueMicrotask(() => load()) }, [load])
@@ -157,7 +161,9 @@ function ExamSchedules() {
       {/* Table */}
       <div className="rounded-2xl border border-[#262636] bg-[#14141E] shadow-sm">
         <div className="overflow-x-auto">
-          {schedules.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>
+          ) : schedules.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-slate-500"><Calendar className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada jadwal</p></div>
           ) : (
             <table className="w-full text-left text-sm">

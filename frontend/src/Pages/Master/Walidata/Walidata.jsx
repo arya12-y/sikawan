@@ -14,18 +14,8 @@ function WalidataPage() {
   const [rows, setRows] = useState([]); const [users, setUsers] = useState([]); const [opds, setOpds] = useState([]); const [bidangs, setBidangs] = useState([]); const [jabatans, setJabatans] = useState([]); const [levels, setLevels] = useState([]); const [search, setSearch] = useState(''); const [loading, setLoading] = useState(true); const [showForm, setShowForm] = useState(false); const [editing, setEditing] = useState(null); const [saving, setSaving] = useState(false); const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = useForm()
   const load = useCallback(async () => { setLoading(true); try { const res = await api.get('/walidatas', { params: search ? { search } : {} }); setRows(normalize(res.data)) } catch (e) { alert(e.response?.data?.message || 'Gagal memuat data') } finally { setLoading(false) } }, [search])
   const loadRefs = useCallback(async () => { try { const [u, o, b, j, l] = await Promise.all([api.get('/users?per_page=200'), api.get('/opds'), api.get('/bidangs'), api.get('/jabatans'), api.get('/levels')]); setUsers(normalize(u.data)); setOpds(normalize(o.data)); setBidangs(normalize(b.data)); setJabatans(normalize(j.data)); setLevels(normalize(l.data)) } catch { undefined } }, [])
-  const isFirstRender = useRef(true)
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      queueMicrotask(() => { load(); loadRefs() })
-      return
-    }
-    const timer = setTimeout(() => {
-      load()
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [load, loadRefs]); const getName = (items, id) => items.find((i) => i.id === Number(id))?.nama || '-'; const getUserName = (id) => users.find((u) => u.id === Number(id))?.name || '-'
+  useEffect(() => { queueMicrotask(() => { load(); loadRefs() }) }, [])
+  useEffect(() => { if (search) { const t = setTimeout(() => load(), 300); return () => clearTimeout(t) } }, [search]); const getName = (items, id) => items.find((i) => i.id === Number(id))?.nama || '-'; const getUserName = (id) => users.find((u) => u.id === Number(id))?.name || '-'
   const openCreate = () => { setEditing(null); reset({ user_id: '', opd_id: '', bidang_id: '', jabatan_id: '', level_id: '', nip: '', nilai_kompetensi: 0, is_active: 1 }); setShowForm(true) }; const openEdit = (row) => { setEditing(row); reset({ user_id: row.user_id || '', opd_id: row.opd_id || '', bidang_id: row.bidang_id || '', jabatan_id: row.jabatan_id || '', level_id: row.level_id || '', nip: row.nip || '', nilai_kompetensi: row.nilai_kompetensi || 0, is_active: row.is_active ? 1 : 0 }); setShowForm(true) }
   const save = async (data) => { setSaving(true); const payload = { user_id: Number(data.user_id), opd_id: Number(data.opd_id), bidang_id: data.bidang_id ? Number(data.bidang_id) : null, jabatan_id: data.jabatan_id ? Number(data.jabatan_id) : null, level_id: data.level_id ? Number(data.level_id) : null, nip: data.nip || null, nilai_kompetensi: Number(data.nilai_kompetensi || 0), is_active: Number(data.is_active) === 1 }; try { if (editing?.id) await api.put(`/walidatas/${editing.id}`, payload); else await api.post('/walidatas', payload); setShowForm(false); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan') } finally { setSaving(false) } }
   const remove = async (row) => { if (!await confirmDelete(row.user?.name || getUserName(row.user_id) || 'Walidata')) return; try { await api.delete(`/walidatas/${row.id}`); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menghapus') } }

@@ -31,7 +31,7 @@ function Penilaian() {
     setLoading(true)
     try {
       const res = await api.get('/penilaian/essay')
-      setRows(Array.isArray(res.data) ? res.data : [])
+      setRows(res.data?.data ?? (Array.isArray(res.data) ? res.data : []))
     } catch {
       setRows([])
     } finally {

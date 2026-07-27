@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Opd;
-use Illuminate\Http\Request;
 use App\Models\PesertaAsesmen;
 use App\Models\Sertifikat;
 use App\Models\Walidata;
@@ -13,6 +12,7 @@ use App\Models\NilaiKompetensi;
 use App\Models\PretestResult;
 use App\Models\Materi;
 use App\Models\Level;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -58,6 +58,7 @@ class DashboardController extends Controller
                 ->map(fn (Walidata $w) => ['label' => $w->user?->name ?: 'Walidata', 'value' => (float) $w->nilai_kompetensi]),
             'kompetensi_scores' => NilaiKompetensi::query()
                 ->selectRaw('kompetensi_id, ROUND(AVG(nilai)) as value')
+                ->with('kompetensi')
                 ->groupBy('kompetensi_id')
                 ->get()
                 ->map(fn ($item) => [

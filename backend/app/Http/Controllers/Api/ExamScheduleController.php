@@ -8,9 +8,10 @@ use Illuminate\Http\Request;
 
 class ExamScheduleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(ExamSchedule::latest()->get());
+        $perPage = (int) $request->query('per_page', 15);
+        return response()->json(ExamSchedule::latest()->paginate($perPage));
     }
 
     public function active()
@@ -80,7 +81,7 @@ class ExamScheduleController extends Controller
 
     public function myStatus(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user()->load('walidata.level');
         $schedule = ExamSchedule::where('is_active', true)->first();
         $pretestDone = \App\Models\PretestResult::where('user_id', $user->id)->exists();
 

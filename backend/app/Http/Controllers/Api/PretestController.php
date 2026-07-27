@@ -26,13 +26,15 @@ class PretestController extends Controller
 
         $soals = [];
         if ($kompetensiIds && count($kompetensiIds) > 0) {
+            $allSoals = BankSoal::whereIn('kompetensi_id', $kompetensiIds)
+                ->where('is_active', true)
+                ->where('jenis', 'pilihan_ganda')
+                ->get(['id', 'kompetensi_id', 'pertanyaan', 'pilihan', 'jenis', 'bobot'])
+                ->groupBy('kompetensi_id');
+
             foreach ($kompetensiIds as $kid) {
-                $soalList = BankSoal::where('kompetensi_id', $kid)
-                    ->where('is_active', true)
-                    ->where('jenis', 'pilihan_ganda')
-                    ->inRandomOrder()
-                    ->limit($jumlah)
-                    ->get(['id', 'kompetensi_id', 'pertanyaan', 'pilihan', 'jenis', 'bobot']);
+                $pool = $allSoals->get($kid, collect());
+                $soalList = $pool->count() > $jumlah ? $pool->random($jumlah) : $pool;
                 $soals = array_merge($soals, $soalList->toArray());
             }
         } else {
@@ -146,11 +148,18 @@ class PretestController extends Controller
     public function result(Request $request)
     {
         $user = $request->user();
+        $latestSesiId = PretestResult::where('user_id', $user->id)
+            ->latest('completed_at')
+            ->value('sesi_id');
+
+        if (!$latestSesiId) {
+            return response()->json(['message' => 'Belum ada hasil pretest'], 404);
+        }
+
         $results = PretestResult::with('kompetensi')
             ->where('user_id', $user->id)
-            ->get()
-            ->groupBy('sesi_id')
-            ->last();
+            ->where('sesi_id', $latestSesiId)
+            ->get();
 
         if (!$results || $results->isEmpty()) {
             return response()->json(['message' => 'Belum ada hasil pretest'], 404);
@@ -175,12 +184,18 @@ class PretestController extends Controller
     {
         $user = $request->user();
 
+        $latestSesiId = PretestResult::where('user_id', $user->id)
+            ->latest('completed_at')
+            ->value('sesi_id');
+
+        if (!$latestSesiId) {
+            return response()->json(['message' => 'Belum ada hasil pretest'], 404);
+        }
+
         $results = PretestResult::with('kompetensi')
             ->where('user_id', $user->id)
-            ->latest()
-            ->get()
-            ->groupBy('sesi_id')
-            ->last();
+            ->where('sesi_id', $latestSesiId)
+            ->get();
 
         if (!$results || $results->isEmpty()) {
             return response()->json(['message' => 'Belum ada hasil pretest'], 404);
@@ -212,10 +227,20 @@ class PretestController extends Controller
 
     public function monitoring(Request $request)
     {
-        $results = PretestResult::whereHas('user', fn ($q) => $q->whereNull('deleted_at'))
+        $search = $request->query('search');
+        $perPage = (int) $request->query('per_page', 15);
+
+        $query = PretestResult::whereHas('user', fn ($q) => $q->whereNull('deleted_at'))
             ->with(['user.walidata.level', 'kompetensi'])
-            ->latest('completed_at')
-            ->get()
+            ->latest('completed_at');
+
+        if ($search) {
+            $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+        }
+
+        $results = $query->paginate($perPage);
+
+        $grouped = collect($results->items())
             ->groupBy(fn ($r) => $r->user_id . '-' . $r->sesi_id)
             ->map(function ($group) {
                 $first = $group->first();
@@ -232,7 +257,13 @@ class PretestController extends Controller
             })
             ->values();
 
-        return response()->json($results);
+        return response()->json([
+            'data' => $grouped,
+            'current_page' => $results->currentPage(),
+            'last_page' => $results->lastPage(),
+            'per_page' => $results->perPage(),
+            'total' => $results->total(),
+        ]);
     }
 
     public function reset(Request $request)

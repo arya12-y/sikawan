@@ -13,11 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->statefulApi();
-
-        // Ini yang akan menyuntikkan header Access-Control-Allow-Origin ke file api.php kamu
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
+            \App\Http\Middleware\LogRequestToConsole::class,
+        ]);
+
+        $middleware->api(remove: [
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
