@@ -71,7 +71,7 @@ function ProtectedRoute() {
 function AccessRoute({ children }) {
   const { user } = useAuth()
   const location = useLocation()
-  const { phase, pretestDone, lulus, asesmenStatus, schedule } = useSchedule()
+  const { phase, pretestDone, lulus, asesmenStatus, asesmenLulus, schedule, allAsesmenDone } = useSchedule()
 
   if (isWalidataRole(user) && !phase) {
     return <div className="flex items-center justify-center py-32"><div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>
@@ -81,7 +81,7 @@ function AccessRoute({ children }) {
     return <Navigate to={firstAllowedPath(user, phase, pretestDone)} replace />
   }
 
-  if (getMenuLock(location.pathname, phase, pretestDone, schedule, user, lulus, asesmenStatus)?.locked) {
+  if (getMenuLock(location.pathname, phase, pretestDone, schedule, user, lulus, asesmenStatus, allAsesmenDone, asesmenLulus)?.locked) {
     return <Navigate to={firstAllowedPath(user, phase, pretestDone)} replace />
   }
 
@@ -160,7 +160,7 @@ function AppRoutes() {
         <Route path="laporan" element={protect(<Laporan />)} />
         <Route path="audit-log" element={protect(<AuditLog />)} />
         <Route path="exam-schedules" element={protect(<ExamSchedules />)} />
-        <Route path="notifikasi" element={<Notifikasi />} />
+        <Route path="notifikasi" element={protect(<Notifikasi />)} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

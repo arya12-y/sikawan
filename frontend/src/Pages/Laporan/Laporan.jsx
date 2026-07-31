@@ -32,7 +32,7 @@ function Laporan() {
       const res = await api.get(endpoint, { params: { type }, responseType: 'blob', signal: controller.signal })
       clearTimeout(timeout)
       const disposition = res.headers?.['content-disposition']
-      const filename = disposition?.match(/filename=(.+)/)?.[1] || `laporan-${type}.${format === 'pdf' ? 'pdf' : 'csv'}`
+      const filename = disposition?.match(/filename=(.+)/)?.[1] || `laporan-${type}.${format === 'pdf' ? 'pdf' : 'xlsx'}`
       const url = URL.createObjectURL(new Blob([res.data]))
       const link = document.createElement('a')
       link.href = url; link.download = filename

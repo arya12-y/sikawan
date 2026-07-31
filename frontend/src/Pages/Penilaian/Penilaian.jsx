@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardCheck, RefreshCw, CheckCircle, XCircle, MessageSquare, Search, ThumbsUp, ThumbsDown } from 'lucide-react'
 import api from '../../api/axios'
+import { showSuccess, showError, showConfirm, showConfirmWithInput } from '../../utils/alert'
+import Swal from 'sweetalert2'
 
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
 
@@ -62,47 +64,55 @@ function Penilaian() {
       await api.post(`/jawaban-pesertas/${selected.id}/grade-essay`, { nilai: Number(nilai), catatan_penguji: catatan || null })
       setSelected(null); load()
     } catch (e) {
-      const isDark = document.documentElement.classList.contains('dark')
-      const Swal = (await import('sweetalert2')).default
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal menyimpan nilai', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      showError('Gagal', e.response?.data?.message || 'Gagal menyimpan nilai')
     } finally { setSaving(false) }
   }
 
   const doApprove = async (pesertaId, nama) => {
-    const isDark = document.documentElement.classList.contains('dark')
-    const Swal = (await import('sweetalert2')).default
-    const { value: cat } = await Swal.fire({
-      title: `Approve ${nama}?`, text: 'Peserta akan dinyatakan LULUS.', icon: 'question',
-      input: 'textarea', inputPlaceholder: 'Catatan (opsional)', showCancelButton: true,
-      confirmButtonText: 'Ya, Approve', cancelButtonText: 'Batal', reverseButtons: true, confirmButtonColor: '#10B981',
-      background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-    })
-    if (cat === undefined) return
+    const result = await showConfirmWithInput(
+      `Approve ${nama}?`,
+      'Peserta akan dinyatakan LULUS.',
+      'Catatan (opsional)',
+      'Ya, Approve'
+    )
+    if (!result.isConfirmed) return
     try {
-      await api.post(`/peserta-asesmens/${pesertaId}/approve`, { catatan: cat || null })
+      await api.post(`/peserta-asesmens/${pesertaId}/approve`, { catatan: result.value || null })
       setRows(prev => prev.map(r => r.peserta_id === pesertaId ? { ...r, lulus: true } : r))
-      Swal.fire({ icon: 'success', title: 'Berhasil', text: `${nama} dinyatakan lulus.`, confirmButtonText: 'OK', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      const isDark = document.documentElement.classList.contains('dark')
+      Swal.fire({
+        icon: 'success', title: 'Berhasil', text: `${nama} dinyatakan lulus.`,
+        confirmButtonText: 'OK', cancelButtonText: 'Cancel', showCancelButton: true,
+        reverseButtons: true, buttonsStyling: false,
+        background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
+        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
+      })
     } catch (e) {
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal approve', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      showError('Gagal', e.response?.data?.message || 'Gagal approve')
     }
   }
 
   const doTolak = async (pesertaId, nama) => {
-    const isDark = document.documentElement.classList.contains('dark')
-    const Swal = (await import('sweetalert2')).default
-    const { value: cat } = await Swal.fire({
-      title: `Tolak ${nama}?`, text: 'Peserta akan dinyatakan TIDAK LULUS.', icon: 'warning',
-      input: 'textarea', inputPlaceholder: 'Alasan penolakan (opsional)', showCancelButton: true,
-      confirmButtonText: 'Ya, Tolak', cancelButtonText: 'Batal', reverseButtons: true, confirmButtonColor: '#EF4444',
-      background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-    })
-    if (cat === undefined) return
+    const result = await showConfirmWithInput(
+      `Tolak ${nama}?`,
+      'Peserta akan dinyatakan TIDAK LULUS.',
+      'Alasan penolakan (opsional)',
+      'Ya, Tolak'
+    )
+    if (!result.isConfirmed) return
     try {
-      await api.post(`/peserta-asesmens/${pesertaId}/tolak`, { catatan: cat || null })
+      await api.post(`/peserta-asesmens/${pesertaId}/tolak`, { catatan: result.value || null })
       setRows(prev => prev.map(r => r.peserta_id === pesertaId ? { ...r, lulus: false } : r))
-      Swal.fire({ icon: 'success', title: 'Berhasil', text: `${nama} dinyatakan tidak lulus.`, confirmButtonText: 'OK', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      const isDark = document.documentElement.classList.contains('dark')
+      Swal.fire({
+        icon: 'success', title: 'Berhasil', text: `${nama} dinyatakan tidak lulus.`,
+        confirmButtonText: 'OK', cancelButtonText: 'Cancel', showCancelButton: true,
+        reverseButtons: true, buttonsStyling: false,
+        background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
+        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
+      })
     } catch (e) {
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal tolak', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      showError('Gagal', e.response?.data?.message || 'Gagal tolak')
     }
   }
 
@@ -114,11 +124,15 @@ function Penilaian() {
       setJadwalModal(null)
       loadWawancara()
       const isDark = document.documentElement.classList.contains('dark')
-      const Swal = (await import('sweetalert2')).default
-      Swal.fire({ icon: 'success', title: 'Terjadwal', text: 'Wawancara berhasil dijadwalkan.', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      Swal.fire({
+        icon: 'success', title: 'Terjadwal', text: 'Wawancara berhasil dijadwalkan.',
+        confirmButtonText: 'OK', cancelButtonText: 'Cancel', showCancelButton: true,
+        reverseButtons: true, buttonsStyling: false,
+        background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
+        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
+      })
     } catch (e) {
-      const Swal = (await import('sweetalert2')).default
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal simpan jadwal', background: '#14141E', color: '#F1F5F9', confirmButtonColor: '#6366f1' })
+      showError('Gagal', e.response?.data?.message || 'Gagal simpan jadwal')
     } finally { setSaving(false) }
   }
 
@@ -130,22 +144,25 @@ function Penilaian() {
   }
 
   const hapusWawancara = async (id, nama) => {
-    const isDark = document.documentElement.classList.contains('dark')
-    const Swal = (await import('sweetalert2')).default
-    const result = await Swal.fire({
-      title: 'Hapus wawancara?',
-      text: `Wawancara "${nama}" akan dihapus.`,
-      icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal',
-      reverseButtons: true, confirmButtonColor: '#EF4444',
-      background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-    })
-    if (!result.isConfirmed) return
+    const confirmed = await showConfirm(
+      'Hapus wawancara?',
+      `Wawancara "${nama}" akan dihapus.`,
+      'Ya, Hapus'
+    )
+    if (!confirmed) return
     try {
       await api.delete(`/penilaian/wawancara/${id}`)
       loadWawancara()
-      Swal.fire({ icon: 'success', title: 'Dihapus', text: 'Wawancara berhasil dihapus.', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      const isDark = document.documentElement.classList.contains('dark')
+      Swal.fire({
+        icon: 'success', title: 'Dihapus', text: 'Wawancara berhasil dihapus.',
+        confirmButtonText: 'OK', cancelButtonText: 'Cancel', showCancelButton: true,
+        reverseButtons: true, buttonsStyling: false,
+        background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
+        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
+      })
     } catch (e) {
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal hapus wawancara', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      showError('Gagal', e.response?.data?.message || 'Gagal hapus wawancara')
     }
   }
 
@@ -156,24 +173,18 @@ function Penilaian() {
         nilai_pemahaman: nilaiForm.pemahaman, nilai_komunikasi: nilaiForm.komunikasi,
         nilai_penerapan: nilaiForm.penerapan, nilai_sikap: nilaiForm.sikap,
       })
-      const isDark = document.documentElement.classList.contains('dark')
-      const Swal = (await import('sweetalert2')).default
-      await Swal.fire({ icon: 'success', title: 'Tersimpan', text: 'Nilai wawancara disimpan.', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      await showSuccess('Tersimpan', 'Nilai wawancara disimpan.')
     } catch (e) {
-      const Swal = (await import('sweetalert2')).default
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal simpan nilai', background: '#14141E', color: '#F1F5F9', confirmButtonColor: '#6366f1' })
+      showError('Gagal', e.response?.data?.message || 'Gagal simpan nilai')
       setWSaving(false); return
     }
     try {
       await api.post(`/penilaian/wawancara/${nilaiWawancara.id}/selesai`, { catatan_wawancara: catatanWawancara, rekomendasi })
       setNilaiWawancara(null)
       loadWawancara()
-      const isDark = document.documentElement.classList.contains('dark')
-      const Swal = (await import('sweetalert2')).default
-      Swal.fire({ icon: 'success', title: 'Selesai', text: `Wawancara selesai. Rekomendasi: ${rekomendasi === 'lulus' ? 'Lulus ✅' : 'Tidak Lulus ❌'}`, background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      showSuccess('Selesai', `Wawancara selesai. Rekomendasi: ${rekomendasi === 'lulus' ? 'Lulus ✅' : 'Tidak Lulus ❌'}`)
     } catch (e) {
-      const Swal = (await import('sweetalert2')).default
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal selesaikan wawancara', background: '#14141E', color: '#F1F5F9', confirmButtonColor: '#6366f1' })
+      showError('Gagal', e.response?.data?.message || 'Gagal selesaikan wawancara')
     } finally { setWSaving(false) }
   }
 

@@ -44,7 +44,7 @@ export const canAccessPath = (user, path) => {
     return perms.includes('audit-log.view')
   }
   
-  if (roles.some((role) => ['Super Admin', 'Admin Diskominfo'].includes(role))) return true
+  if (roles.includes('Super Admin')) return true
 
   const modules = getUserPermModules(user)
   for (const entry of permissionModulePaths) {
@@ -80,7 +80,7 @@ function countdownLabel(dateStr) {
   return `Tersedia dalam ${diffMinutes} menit`
 }
 
-export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = false, asesmenStatus = null) {
+export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = false, asesmenStatus = null, allAsesmenDone = false, asesmenLulus = null) {
   if (!isWalidataRole(user)) return { locked: false, message: '' }
   if (!phase) return { locked: true, message: '' }
   if (phase === 'none') return { locked: true, message: 'Belum ada jadwal' }
@@ -93,6 +93,9 @@ export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = fa
   }
 
   if (path.startsWith('/pembelajaran') || path === '/bank-soal') {
+    if (allAsesmenDone && lulus) return { locked: true, message: 'Semua asesmen telah selesai' }
+    if (asesmenStatus === 'selesai' && asesmenLulus === null) return { locked: true, message: 'Menunggu penilaian penguji' }
+    if (asesmenLulus === false) return { locked: false, message: '' }
     if (phase === 'exam' && asesmenStatus !== 'selesai') return { locked: true, message: 'Fokus ujian asesmen' }
     if (phase === 'closed') return { locked: true, message: 'Jadwal selesai' }
     if (pretestDone) return { locked: false, message: '' }
@@ -101,6 +104,10 @@ export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = fa
   }
 
   if (path === '/asesmen') {
+    if (allAsesmenDone && lulus) return { locked: true, message: 'Semua asesmen selesai' }
+    if (asesmenStatus === 'selesai' && asesmenLulus === null) return { locked: true, message: 'Menunggu penilaian' }
+    if (asesmenLulus === false) return { locked: false, message: '' }
+    if (allAsesmenDone && !lulus) return { locked: true, message: 'Hubungi admin untuk reset' }
     if (phase === 'exam') return { locked: false, message: '' }
     if (phase === 'closed') return { locked: true, message: 'Jadwal selesai' }
     return { locked: true, message: countdownLabel(schedule?.exam_start) }
@@ -108,6 +115,7 @@ export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = fa
 
   if (path === '/sertifikat') {
     if (lulus) return { locked: false, message: '' }
+    if (asesmenLulus === false) return { locked: true, message: 'Belum lulus asesmen' }
     if (phase === 'closed') return { locked: true, message: 'Jadwal selesai' }
     return { locked: true, message: 'Selesaikan ujian asesmen dengan lulus terlebih dahulu' }
   }

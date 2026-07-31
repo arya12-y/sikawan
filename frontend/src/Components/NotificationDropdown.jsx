@@ -50,8 +50,8 @@ function NotificationDropdown() {
         type="button" 
         onClick={() => setOpen(!open)}
       >
-        <Bell className="h-4.5 w-4.5" />
-        {unreadCount > 0 && <span className="absolute right-2.5 top-2.5 flex h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white"></span>}
+        <Bell className="h-4 w-4" />
+        {unreadCount > 0 && <span className="absolute right-2 top-2 flex h-1.5 w-1.5 rounded-full bg-rose-500 ring-1 ring-white"></span>}
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-[#1E1E2E] bg-[#14141E] py-2 shadow-xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden">

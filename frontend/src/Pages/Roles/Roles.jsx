@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Shield, Plus, Check, Users, Pencil, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { confirmDelete } from '../../utils/confirm'
+import { showWarning, showSuccess, showError } from '../../utils/alert'
 
 const actionLabels = { view: 'Lihat', create: 'Tambah', update: 'Ubah', delete: 'Hapus', import: 'Import', export: 'Export', publish: 'Publikasi', start: 'Mulai', grade: 'Nilai', review: 'Review', download: 'Download', print: 'Cetak', 'export-pdf': 'Export PDF', 'export-excel': 'Export Excel' }
 const moduleLabels = { dashboard: 'Dashboard', opd: 'OPD', bidang: 'Bidang', jabatan: 'Jabatan', walidata: 'Walidata', penguji: 'Penguji', kompetensi: 'Kompetensi', level: 'Level', badge: 'Badge', materi: 'Materi', kategori: 'Kategori', pengguna: 'Pengguna', 'bank-soal': 'Bank Soal', quiz: 'Quiz', asesmen: 'Asesmen', penilaian: 'Penilaian', sertifikat: 'Sertifikat', monitoring: 'Monitoring', laporan: 'Laporan', 'audit-log': 'Audit Log', notifikasi: 'Notifikasi', profile: 'Profile', password: 'Password', session: 'Session' }
@@ -30,13 +31,15 @@ function Roles() {
   const selectAll = (perms) => { const allSelected = perms.every((p) => selectedPerms.includes(p.name)); perms.forEach((p) => { if (!allSelected) { setSelectedPerms((prev) => prev.includes(p.name) ? prev : [...prev, p.name]) } else { setSelectedPerms((prev) => prev.filter((x) => x !== p.name)) } }) }
 
   const save = async () => {
-    if (!formName.trim()) return alert('Nama role harus diisi')
+    if (!formName.trim()) { showWarning('Nama role kosong', 'Nama role harus diisi', 'Oke'); return }
     setSaving(true)
     try {
       if (editing) await api.put(`/roles/${editing.id}`, { name: formName.trim(), permissions: selectedPerms })
       else await api.post('/roles', { name: formName.trim(), permissions: selectedPerms })
-      setShowForm(false); load()
-    } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan') } finally { setSaving(false) }
+      await load()
+      await showSuccess('Berhasil', 'Role berhasil disimpan')
+      setShowForm(false)
+    } catch (e) { await showError('Gagal', e.response?.data?.message || 'Gagal menyimpan role') } finally { setSaving(false) }
   }
 
   const remove = async (role) => { if (await confirmDelete(role.name)) { try { await api.delete(`/roles/${role.id}`); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menghapus') } } }

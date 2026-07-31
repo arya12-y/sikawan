@@ -43,10 +43,14 @@ export function useSchedule() {
     loading,
     phase: (localPhase || status?.phase) ?? (timeoutPassed ? 'none' : null),
     pretestDone: status?.pretest_done ?? false,
+    pretestActivated: status?.pretest_activated ?? false,
     lulus: status?.lulus ?? false,
     asesmenStatus: status?.asesmen_status ?? null,
     asesmenLulus: status?.asesmen_lulus ?? null,
     asesmenNilai: status?.asesmen_nilai ?? null,
+    asesmenSelesai: status?.asesmen_selesai ?? 0,
+    asesmenTotal: status?.asesmen_total ?? 0,
+    allAsesmenDone: status?.all_asesmen_done ?? false,
     schedule: status?.schedule ?? null,
   }
 }

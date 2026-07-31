@@ -11,10 +11,9 @@ const inputClass = 'w-full rounded-xl border border-[#1E1E2E] bg-[#14141E] px-3 
 const buttonClass = 'inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60'
 function Penguji() {
   const { user } = useAuth()
-  const [rows, setRows] = useState([]); const [users, setUsers] = useState([]); const [search, setSearch] = useState(''); const [loading, setLoading] = useState(true); const [showForm, setShowForm] = useState(false); const [editing, setEditing] = useState(null); const [saving, setSaving] = useState(false); const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = useForm()
+  const [rows, setRows] = useState([]); const [users, setUsers] = useState([]);   const [search, setSearch] = useState(''); const [loading, setLoading] = useState(true); const [showForm, setShowForm] = useState(false); const [editing, setEditing] = useState(null); const [saving, setSaving] = useState(false); const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = useForm()
   const load = useCallback(async () => { setLoading(true); try { const res = await api.get('/pengujis', { params: search ? { search } : {} }); setRows(normalize(res.data)) } catch (e) { alert(e.response?.data?.message || 'Gagal memuat data') } finally { setLoading(false) } }, [search])
   const loadRefs = useCallback(async () => { try { const res = await api.get('/users?per_page=200'); setUsers(normalize(res.data)) } catch { setUsers([]) } }, [])
-  const isFirstRender = useRef(true)
   useEffect(() => { queueMicrotask(() => { load(); loadRefs() }) }, [])
   useEffect(() => { if (search) { const t = setTimeout(() => load(), 300); return () => clearTimeout(t) } }, [search]); const getUserName = (id) => users.find((u) => u.id === Number(id))?.name || '-'
   const openCreate = () => { setEditing(null); reset({ user_id: '', nip: '', bidang_keahlian: '', bio: '', is_active: 1 }); setShowForm(true) }; const openEdit = (row) => { setEditing(row); reset({ user_id: row.user_id || '', nip: row.nip || '', bidang_keahlian: row.bidang_keahlian || '', bio: row.bio || '', is_active: row.is_active ? 1 : 0 }); setShowForm(true) }

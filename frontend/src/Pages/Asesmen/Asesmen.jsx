@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { AlertCircle as AlertCircleIcon, ClipboardCheck, Clock, Award, BookOpen, Plus, X, Pencil, Trash2, XCircle } from 'lucide-react'
 import api from '../../api/axios'
-import { confirmAction, confirmDelete } from '../../utils/confirm'
-import Swal from 'sweetalert2'
+import { confirmDelete } from '../../utils/confirm'
+import { showWarning, showSuccessToast, showError, showConfirm, showSuccess } from '../../utils/alert'
 import { useAuth } from '../../hooks/useAuth'
 import { useSchedule } from '../../hooks/useSchedule'
 import { can } from '../../utils/can'
@@ -32,21 +32,39 @@ function Asesmen() {
   const [asesmenStatus, setAsesmenStatus] = useState(null)
   const [schedule, setSchedule] = useState(null)
   const [ready, setReady] = useState(false)
+  const [kompetensiScores, setKompetensiScores] = useState([])
+  const [selectedKompetensi, setSelectedKompetensi] = useState([])
+  const [submitted, setSubmitted] = useState(false)
+  const [kompetensiMap, setKompetensiMap] = useState({})
   const { user } = useAuth()
   const scheduleData = useSchedule()
+  const allAsesmenDone = scheduleData.allAsesmenDone
+  useEffect(() => { if (asesmenLulus !== null) setSubmitted(false) }, [asesmenLulus])
+  useEffect(() => {
+    const scores = scheduleData?.status?.nilai_kompetensi
+    if (Array.isArray(scores)) setKompetensiScores(scores)
+  }, [scheduleData?.status?.nilai_kompetensi])
   const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = useForm()
   const roles = Array.isArray(user?.roles) ? user.roles : []
   const isWalidata = roles.includes('Walidata')
   const questions = useMemo(() => peserta?.asesmen?.bank_soals || peserta?.asesmen?.bankSoals || [], [peserta])
   const answeredCount = Object.values(answers).filter((value) => String(value || '').trim() !== '').length
 
+  const synced = useRef(false)
   useEffect(() => {
-    if (scheduleData.phase && !phase) setPhase(scheduleData.phase)
-    if (scheduleData.asesmenStatus && !asesmenStatus) setAsesmenStatus(scheduleData.asesmenStatus)
-    if (scheduleData.asesmenLulus !== null && asesmenLulus === null) setAsesmenLulus(scheduleData.asesmenLulus)
-    if (scheduleData.asesmenNilai && !asesmenNilai) setAsesmenNilai(scheduleData.asesmenNilai)
-    if (scheduleData.schedule && !schedule) setSchedule(scheduleData.schedule)
-  }, [scheduleData, phase, asesmenStatus, asesmenLulus, asesmenNilai, schedule])
+    if (synced.current) return
+    if (scheduleData.phase) { setPhase(scheduleData.phase); synced.current = true }
+    if (scheduleData.asesmenStatus) setAsesmenStatus(scheduleData.asesmenStatus)
+    if (scheduleData.asesmenLulus !== null) setAsesmenLulus(scheduleData.asesmenLulus)
+    if (scheduleData.asesmenNilai) setAsesmenNilai(scheduleData.asesmenNilai)
+    if (scheduleData.schedule) setSchedule(scheduleData.schedule)
+  }, [scheduleData])
+
+  useEffect(() => {
+    if (scheduleData?.status?.nilai_kompetensi) {
+      setKompetensiScores(scheduleData.status.nilai_kompetensi)
+    }
+  }, [scheduleData?.status?.nilai_kompetensi])
 
   const load = useCallback(async () => {
     const [a, k, l] = await Promise.all([
@@ -58,24 +76,20 @@ function Asesmen() {
   useEffect(() => { queueMicrotask(() => load()) }, [load])
 
   const submitExam = async (auto = false) => {
+    if (peserta?.status === 'trial') { setPeserta(null); setActiveTab('list'); return }
     if (!auto) {
       const belumDijawab = questions.filter(s =>
         !s.jenis || !String(answers[s.id] || '').trim()
       )
       if (belumDijawab.length > 0) {
-        const isDark = document.documentElement.classList.contains('dark')
-        Swal.fire({
-          icon: 'warning',
-          title: 'Soal Belum Dijawab',
-          text: `Ada ${belumDijawab.length} soal yang masih kosong (${belumDijawab.filter(s => s.jenis === 'essay').length} essay, ${belumDijawab.filter(s => s.jenis !== 'essay').length} PG). Jawab terlebih dahulu.`,
-          confirmButtonText: 'Oke',
-          background: isDark ? '#14141E' : '#FFFFFF',
-          color: isDark ? '#F1F5F9' : '#0F172A',
-          confirmButtonColor: '#6366f1',
-        })
+        await showWarning(
+          'Soal Belum Dijawab',
+          `Ada ${belumDijawab.length} soal yang masih kosong (${belumDijawab.filter(s => s.jenis === 'essay').length} essay, ${belumDijawab.filter(s => s.jenis !== 'essay').length} PG). Jawab terlebih dahulu.`,
+          'Oke'
+        )
         return
       }
-      if (!await confirmAction({ title: 'Kumpulkan asesmen?', text: 'Jawaban yang sudah dikirim tidak dapat diubah lagi.', confirmButtonText: 'Ya, kumpulkan', icon: 'question' })) return
+      if (!await showConfirm('Kumpulkan asesmen?', 'Jawaban yang sudah dikirim tidak dapat diubah lagi.', 'Ya, kumpulkan', 'Batal', 'question')) return
     }
     try {
       const submitRes = await api.post(`/peserta-asesmens/${peserta.id}/submit`)
@@ -84,10 +98,11 @@ function Asesmen() {
       setAsesmenLulus(null)
       setAsesmenNilai(submitRes.data?.nilai ?? null)
       setActiveTab('list')
+      setSubmitted(true)
       load()
+      await showConfirm('Terkirim', 'Jawaban asesmen berhasil dikirim dan akan segera diperiksa.', 'OK', 'Cancel', 'success')
     } catch (e) {
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal submit asesmen', confirmButtonText: 'Tutup', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+      await showError('Gagal', e.response?.data?.message || 'Gagal submit asesmen')
     }
   }
   submitRef.current = submitExam
@@ -108,20 +123,53 @@ function Asesmen() {
 
   const formatTime = (value) => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
   const getName = (items, id) => items.find((item) => item.id === id)?.nama || '-'
-  const openCreate = () => { setCurrent(null); reset({ judul: '', deskripsi: '', kompetensi_id: '', level_id: '', jumlah_soal: 10, durasi: 30, nilai_lulus: 60, acak_soal: 1, acak_jawaban: 1, status: 'published' }); setActiveTab('form') }
-  const openEdit = (row) => { setCurrent(row); reset({ ...row, acak_soal: row.acak_soal ? 1 : 0, acak_jawaban: row.acak_jawaban ? 1 : 0 }); setActiveTab('form') }
+  const openCreate = () => { setCurrent(null); setSelectedKompetensi([]); reset({ judul: '', deskripsi: '', level_id: '', jumlah_soal: 10, durasi: 30, nilai_lulus: 60, acak_soal: 1, acak_jawaban: 1, status: 'published' }); setActiveTab('form') }
+  const openEdit = (row) => { setCurrent(row); setSelectedKompetensi(row.kompetensi_ids || []); reset({ ...row, acak_soal: row.acak_soal ? 1 : 0, acak_jawaban: row.acak_jawaban ? 1 : 0 }); setActiveTab('form') }
   const save = async (data) => {
     setSaving(true)
-    const payload = { ...data, jumlah_soal: Number(data.jumlah_soal || 0), durasi: Number(data.durasi || 0), nilai_lulus: Number(data.nilai_lulus || 0), level_id: data.level_id || null, acak_soal: Number(data.acak_soal) === 1, acak_jawaban: Number(data.acak_jawaban) === 1 }
-    try { if (current?.id) await api.put(`/asesmens/${current.id}`, payload); else await api.post('/asesmens', payload); await load(); setActiveTab('list') } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan asesmen') } finally { setSaving(false) }
+    if (selectedKompetensi.length === 0) {
+      await showWarning('Kompetensi belum dipilih', 'Pilih minimal 1 kompetensi', 'Oke')
+      setSaving(false)
+      return
+    }
+    const payload = { ...data, kompetensi_ids: selectedKompetensi, jumlah_soal: Number(data.jumlah_soal || 0), durasi: Number(data.durasi || 0), nilai_lulus: Number(data.nilai_lulus || 0), level_id: data.level_id || null, acak_soal: Number(data.acak_soal) === 1, acak_jawaban: Number(data.acak_jawaban) === 1 }
+    try {
+      if (current?.id) await api.put(`/asesmens/${current.id}`, payload)
+      else await api.post('/asesmens', payload)
+      await load()
+      await showConfirm('Berhasil', 'Asesmen berhasil disimpan', 'OK', 'Cancel', 'success')
+      setActiveTab('list')
+    } catch (e) {
+      await showConfirm(
+        'Gagal',
+        e.response?.data?.message || 'Gagal menyimpan asesmen',
+        'Tutup',
+        'Cancel',
+        'error'
+      )
+    } finally {
+      setSaving(false)
+    }
   }
   const remove = async (row) => { if (await confirmDelete(row.judul)) { await api.delete(`/asesmens/${row.id}`); load() } }
   const startExam = async (row) => {
-    try { setLoading(true); const res = await api.post(`/asesmens/${row.id}/start`); setPeserta(res.data); const saved = {}; (res.data.jawaban_pesertas || res.data.jawabanPesertas || []).forEach((item) => { saved[item.bank_soal_id] = item.jawaban }); setAnswers(saved); setSecondsLeft(Number(res.data.asesmen?.durasi || row.durasi || 0) * 60); setActiveTab('exam') } catch (e) {
+    try {
+      setLoading(true)
+      const res = await api.post(`/asesmens/${row.id}/start`)
+      setPeserta(res.data)
+      const saved = {}
+      ;(res.data.jawaban_pesertas || res.data.jawabanPesertas || []).forEach((item) => {
+        saved[item.bank_soal_id] = item.jawaban
+      })
+      setAnswers(saved)
+      setSecondsLeft(Number(res.data.asesmen?.durasi || row.durasi || 0) * 60)
+      setActiveTab('exam')
+    } catch (e) {
       const msg = e.response?.data?.message || 'Gagal memulai asesmen. Pastikan bank soal tersedia.'
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({ icon: 'warning', title: 'Tidak dapat memulai', text: msg, confirmButtonText: 'Mengerti', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
-    } finally { setLoading(false) }
+      await showWarning('Tidak dapat memulai', msg, 'Mengerti')
+    } finally {
+      setLoading(false)
+    }
   }
   const saveAnswerRef = useRef({})
   const saveAnswer = (soalId, value) => {
@@ -135,25 +183,20 @@ function Asesmen() {
   }
 
   const resetExam = async (row) => {
-    const isDark = document.documentElement.classList.contains('dark')
-    const result = await Swal.fire({
-      title: 'Reset ujian?',
-      text: `"${row.judul}" — Jawaban dan sertifikat akan dihapus. User bisa mengulang dari awal.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Ya, Reset',
-      cancelButtonText: 'Batal',
-      reverseButtons: true,
-      confirmButtonColor: '#EF4444',
-      background: isDark ? '#14141E' : '#FFFFFF',
-      color: isDark ? '#F1F5F9' : '#0F172A',
-      customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn swal-reset-btn', cancelButton: 'swal-cancel-btn' },
-    })
-    if (!result.isConfirmed) return
+    const confirmed = await showConfirm(
+      'Reset ujian?',
+      `"${row.judul}" — Jawaban dan sertifikat akan dihapus. User bisa mengulang dari awal.`,
+      'Ya, Reset',
+      'Batal',
+      'warning'
+    )
+    if (!confirmed) return
     try {
       await api.post(`/peserta-asesmens/${row.pivot?.peserta_asesmen_id || row.id}/reset`)
       load()
-    } catch (e) { Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal reset ujian', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } }) }
+    } catch (e) {
+      await showError('Gagal', e.response?.data?.message || 'Gagal reset ujian')
+    }
   }
 
   const statusStyle = (s) => s === 'published' || s === 'ongoing' ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-400/20' : s === 'finished' ? 'bg-slate-500/10 text-slate-400 ring-slate-400/20' : 'bg-amber-500/10 text-amber-400 ring-amber-400/20'
@@ -162,7 +205,7 @@ function Asesmen() {
   const examLocked = isWalidata && phase && phase !== 'exam'
 
   // Status: Menunggu penilaian essay oleh penguji
-  if (ready && isWalidata && asesmenStatus === 'selesai' && asesmenLulus === null) {
+  if (ready && isWalidata && (submitted || (asesmenStatus === 'selesai' && asesmenLulus === null))) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] border-b-amber-500/40 bg-[#14141E] p-8 text-center shadow-lg shadow-black/10">
@@ -208,9 +251,43 @@ function Asesmen() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-400 mb-3">Belum Lulus</span>
           <h2 className="mt-3 text-2xl font-bold text-slate-100">Anda belum lulus asesmen</h2>
           <p className="mt-2 text-sm text-slate-400">Nilai Anda: <strong className="text-slate-100">{asesmenNilai}</strong></p>
-          <p className="mt-1 text-sm text-slate-500">Silakan pelajari materi terlebih dahulu, lalu hubungi admin untuk mereset asesmen agar bisa ujian ulang.</p>
-          <div className="mt-6 flex justify-center gap-3">
-            <button onClick={() => navigate('/pembelajaran')} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-violet-500">
+          <p className="mt-1 text-sm text-slate-500">Silakan pelajari materi berikut yang masih kurang:</p>
+        </div>
+        {kompetensiScores.length > 0 && (
+          <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-6 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-100 mb-4">Skor per Kompetensi</h3>
+            <div className="space-y-3">
+              {kompetensiScores.map((item, i) => {
+                const rendah = item.nilai < 70
+                return (
+                  <div key={i} className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs font-medium ${rendah ? 'text-rose-400' : 'text-slate-300'}`}>{item.kompetensi}</span>
+                        <span className={`text-xs font-bold ${rendah ? 'text-rose-400' : 'text-slate-100'}`}>{item.nilai}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-[#1E1E2E] overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${rendah ? 'bg-gradient-to-r from-rose-500 to-rose-400' : 'bg-gradient-to-r from-emerald-500 to-emerald-400'}`} style={{ width: `${Math.min(100, item.nilai)}%` }} />
+                      </div>
+                    </div>
+                    {rendah && item.kompetensi_id && (
+                      <button onClick={() => navigate(`/pembelajaran?kompetensi_id=${item.kompetensi_id}`)} className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 hover:bg-indigo-500/20 transition">
+                        <BookOpen className="h-3 w-3" /> Pelajari
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+        <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-6 text-center shadow-sm">
+          <p className="text-sm text-slate-400">Pelajari materi yang nilainya masih rendah, lalu minta admin untuk <strong>reset asesmen</strong> agar bisa ujian ulang.</p>
+          <div className="mt-4 flex justify-center gap-3">
+            <button onClick={() => {
+              const rendah = kompetensiScores.find(s => s.nilai < 70 && s.kompetensi_id)
+              navigate(rendah ? `/pembelajaran?kompetensi_id=${rendah.kompetensi_id}` : '/pembelajaran')
+            }} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-violet-500">
               <BookOpen className="h-4 w-4" /> Pelajari Lagi
             </button>
           </div>
@@ -281,7 +358,7 @@ function Asesmen() {
                   {asesmens.map((row) => (
                     <tr className="transition hover:bg-white/[0.02]" key={row.id}>
                       <td className="px-4 py-3"><p className="font-medium text-slate-100">{row.judul}</p><p className="text-xs text-slate-500 mt-0.5">Nilai lulus {row.nilai_lulus}</p></td>
-                      <td className="px-4 py-3 text-slate-400 hidden md:table-cell">{row.kompetensi?.nama || getName(kompetensis, row.kompetensi_id)}</td>
+                      <td className="px-4 py-3 text-slate-400 hidden md:table-cell">{(row.kompetensi_ids || []).length > 1 ? `${(row.kompetensi_ids || []).length} kompetensi` : (row.kompetensi?.nama || getName(kompetensis, row.kompetensi_id || row.kompetensi_ids?.[0]))}</td>
                       <td className="px-4 py-3 text-slate-400 hidden md:table-cell">{row.level?.nama || getName(levels, row.level_id)}</td>
                       <td className="px-4 py-3 text-center text-slate-300">{row.jumlah_soal}</td>
                       <td className="px-4 py-3 text-slate-400">{row.durasi} menit</td>
@@ -310,7 +387,7 @@ function Asesmen() {
             <div className="col-span-8"><label className={labelClass}>Judul <span className="text-rose-400">*</span></label><input className={inputClass} placeholder="Masukkan judul asesmen" {...register('judul', { required: true })} /></div>
             <div className="col-span-4"><label className={labelClass}>Status</label><select className={inputClass} {...register('status')}><option value="draft">Draft</option><option value="published">Published</option><option value="ongoing">Ongoing</option><option value="finished">Finished</option></select></div>
             <div className="col-span-12"><label className={labelClass}>Deskripsi</label><textarea className={inputClass} rows="3" placeholder="Masukkan deskripsi asesmen" {...register('deskripsi')} /></div>
-            <div className="col-span-6"><label className={labelClass}>Kompetensi <span className="text-rose-400">*</span></label><select className={inputClass} {...register('kompetensi_id', { required: true })}><option value="">Pilih Kompetensi</option>{kompetensis.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
+            <div className="col-span-6"><label className={labelClass}>Kompetensi <span className="text-rose-400">*</span></label><div className="flex flex-wrap gap-1.5 p-3 rounded-xl border border-[#262636] bg-[#1A1A26]">{kompetensis.map((item) => <button key={item.id} type="button" onClick={() => setSelectedKompetensi(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id])} className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${selectedKompetensi.includes(item.id) ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 hover:text-slate-300'}`}>{item.nama}</button>)}</div></div>
             <div className="col-span-6"><label className={labelClass}>Level</label><select className={inputClass} {...register('level_id')}><option value="">Semua Level</option>{levels.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
             {[['jumlah_soal', 'Jumlah Soal'], ['durasi', 'Durasi (menit)'], ['nilai_lulus', 'Nilai Lulus']].map(([name, label]) => <div className="col-span-4" key={name}><label className={labelClass}>{label} <span className="text-rose-400">*</span></label><input type="number" className={inputClass} placeholder={`Masukkan ${label.toLowerCase()}`} {...register(name, { required: true })} /></div>)}
             <div className="col-span-6"><label className={labelClass}>Acak Soal</label><select className={inputClass} {...register('acak_soal')}><option value={1}>Ya</option><option value={0}>Tidak</option></select></div>

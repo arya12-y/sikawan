@@ -5,6 +5,7 @@ import api from '../../api/axios'
 import { can } from '../../utils/can'
 import { useAuth } from '../../hooks/useAuth'
 import { confirmDelete } from '../../utils/confirm'
+import { showWarning, showSuccess, showError } from '../../utils/alert'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
@@ -17,7 +18,9 @@ function BankSoal() {
   const [levels, setLevels] = useState([])
   const [search, setSearch] = useState('')
   const [filterJenis, setFilterJenis] = useState('')
+  const [filterTipe, setFilterTipe] = useState('')
   const [filterKompetensi, setFilterKompetensi] = useState('')
+  const [selectedTipe, setSelectedTipe] = useState([])
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -25,27 +28,34 @@ function BankSoal() {
   const [showImport, setShowImport] = useState(false)
   const [importText, setImportText] = useState('')
   const [importing, setImporting] = useState(false)
+  const [page, setPage] = useState(1)
+  const [lastPage, setLastPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const fileInputRef = useRef(null)
   const isFirstRender = useRef(true)
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitted } } = useForm()
   const jenis = watch('jenis')
   const searchRef = useRef(search)
   const filterJenisRef = useRef(filterJenis)
+  const filterTipeRef = useRef(filterTipe)
   const filterKompetensiRef = useRef(filterKompetensi)
 
-  const load = useCallback(async (paramsOverride) => {
+  const goToPage = useCallback(async (p) => {
     setLoading(true)
     try {
-      const params = paramsOverride || {}
-      if (!paramsOverride) {
-        if (search) params.search = search
-        if (filterJenis) params.jenis = filterJenis
-        if (filterKompetensi) params.kompetensi_id = filterKompetensi
-      }
+      const params = { per_page: 15, page: p }
+      if (search) params.search = search
+      if (filterJenis) params.jenis = filterJenis
+      if (filterTipe) params.tipe = filterTipe
+      if (filterKompetensi) params.kompetensi_id = filterKompetensi
       const res = await api.get('/bank-soals', { params })
-      setRows(normalize(res.data))
+      const d = res.data
+      setRows(normalize(d))
+      setLastPage(d.last_page || 1)
+      setTotal(d.total || 0)
+      setPage(d.current_page || 1)
     } catch (e) { alert(e.response?.data?.message || 'Gagal memuat bank soal') } finally { setLoading(false) }
-  }, [search, filterJenis, filterKompetensi])
+  }, [search, filterJenis, filterTipe, filterKompetensi])
 
   const loadRefs = useCallback(async () => {
     const [k, l] = await Promise.all([api.get('/kompetensis'), api.get('/levels')])
@@ -53,18 +63,19 @@ function BankSoal() {
     setLevels(normalize(l.data))
   }, [])
 
-  useEffect(() => { queueMicrotask(() => { load(); loadRefs(); isFirstRender.current = false }) }, [])
+  useEffect(() => { queueMicrotask(() => { goToPage(1); loadRefs(); isFirstRender.current = false }) }, [])
 
   useEffect(() => {
     if (isFirstRender.current) return
-    const changed = search !== searchRef.current || filterJenis !== filterJenisRef.current || filterKompetensi !== filterKompetensiRef.current
+    const changed = search !== searchRef.current || filterJenis !== filterJenisRef.current || filterTipe !== filterTipeRef.current || filterKompetensi !== filterKompetensiRef.current
     searchRef.current = search
     filterJenisRef.current = filterJenis
+    filterTipeRef.current = filterTipe
     filterKompetensiRef.current = filterKompetensi
     if (!changed) return
-    const t = setTimeout(() => load(), 300)
+    const t = setTimeout(() => { setPage(1); goToPage(1) }, 300)
     return () => clearTimeout(t)
-  }, [search, filterJenis, filterKompetensi, load])
+  }, [search, filterJenis, filterTipe, filterKompetensi, goToPage])
 
   const formKey = useMemo(() => editing?.id || 'create', [editing?.id])
 
@@ -74,8 +85,10 @@ function BankSoal() {
       const rawPilihan = editing.pilihan
       const choices = Array.isArray(rawPilihan) ? rawPilihan : (typeof rawPilihan === 'string' ? (() => { try { return JSON.parse(rawPilihan) } catch { return [] } })() : [])
       const letterIndex = choices.findIndex((c) => c === editing.jawaban_benar)
+      setSelectedTipe(editing.tipe || [])
       reset({ kompetensi_id: editing.kompetensi_id || '', level_id: editing.level_id || '', jenis: editing.jenis || 'pilihan_ganda', pertanyaan: editing.pertanyaan || '', pilihan_a: choices[0] || '', pilihan_b: choices[1] || '', pilihan_c: choices[2] || '', pilihan_d: choices[3] || '', jawaban_benar_letter: letterIndex >= 0 ? ['A', 'B', 'C', 'D'][letterIndex] : editing.jawaban_benar || '', pembahasan: editing.pembahasan || '', bobot: editing.bobot || 1, is_active: editing.is_active ? 1 : 0 })
     } else {
+      setSelectedTipe([])
       reset({ kompetensi_id: '', level_id: '', jenis: 'pilihan_ganda', pertanyaan: '', pilihan_a: '', pilihan_b: '', pilihan_c: '', pilihan_d: '', jawaban_benar_letter: '', pembahasan: '', bobot: 1, is_active: 1 })
     }
   }, [showForm, editing, reset])
@@ -85,14 +98,29 @@ function BankSoal() {
 
   const save = async (data) => {
     setSaving(true)
+    if (selectedTipe.length === 0) {
+      await showWarning('Tipe belum dipilih', 'Pilih minimal 1 tipe (Quiz, Pretest, atau Asesmen)', 'Oke')
+      setSaving(false)
+      return
+    }
     const pilihan = [data.pilihan_a, data.pilihan_b, data.pilihan_c, data.pilihan_d].filter(Boolean)
     const letterMap = { A: 0, B: 1, C: 2, D: 3 }
     const jawabanBenar = data.jenis === 'pilihan_ganda' && data.jawaban_benar_letter ? (pilihan[letterMap[data.jawaban_benar_letter]] || data.jawaban_benar_letter) : data.jawaban_benar_letter
-    const payload = { kompetensi_id: data.kompetensi_id, level_id: data.level_id || null, jenis: data.jenis, pertanyaan: data.pertanyaan, pilihan: data.jenis === 'pilihan_ganda' ? pilihan : null, jawaban_benar: jawabanBenar || null, pembahasan: data.pembahasan || null, bobot: Number(data.bobot || 1), is_active: Number(data.is_active) === 1 }
-    try { if (editing?.id) await api.put(`/bank-soals/${editing.id}`, payload); else await api.post('/bank-soals', payload); setShowForm(false); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menyimpan soal') } finally { setSaving(false) }
+    const payload = { kompetensi_id: data.kompetensi_id, level_id: data.level_id || null, jenis: data.jenis, tipe: selectedTipe, pertanyaan: data.pertanyaan, pilihan: data.jenis === 'pilihan_ganda' ? pilihan : null, jawaban_benar: jawabanBenar || null, pembahasan: data.pembahasan || null, bobot: Number(data.bobot || 1), is_active: Number(data.is_active) === 1 }
+    try {
+      if (editing?.id) await api.put(`/bank-soals/${editing.id}`, payload)
+      else await api.post('/bank-soals', payload)
+      await goToPage(1)
+      await showSuccess('Berhasil', 'Soal berhasil disimpan')
+      setShowForm(false)
+    } catch (e) {
+      await showError('Gagal', e.response?.data?.message || 'Gagal menyimpan soal')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const remove = async (row) => { if (await confirmDelete(row.pertanyaan || 'Soal ini')) { await api.delete(`/bank-soals/${row.id}`); load() } }
+  const remove = async (row) => { if (await confirmDelete(row.pertanyaan || 'Soal ini')) { await api.delete(`/bank-soals/${row.id}`); goToPage(1) } }
 
   const exportCsv = async () => {
     try { const res = await api.get('/bank-soals/export?format=csv', { responseType: 'blob' }); const url = URL.createObjectURL(new Blob([res.data])); const link = document.createElement('a'); link.href = url; link.download = 'bank-soal.csv'; link.click(); URL.revokeObjectURL(url) } catch (e) { alert(e.response?.data?.message || 'Gagal export bank soal') }
@@ -122,14 +150,18 @@ function BankSoal() {
             jawabanBenar = letterIndex >= 0 && choices[letterIndex] ? choices[letterIndex] : jawaban
           }
         }
-        items.push({ pertanyaan, jawaban_benar: jawabanBenar, pembahasan, jenis, bobot, pilihan, kompetensi_id: kompetensi?.id || kompetensis[0]?.id || '', is_active: true })
+        items.push({ pertanyaan, jawaban_benar: jawabanBenar, pembahasan, jenis, tipe: ['quiz'], bobot, pilihan, kompetensi_id: kompetensi?.id || kompetensis[0]?.id || '', is_active: true })
       }
-      if (items.length === 0) { alert('Format tidak valid'); setImporting(false); return }
+      if (items.length === 0) {
+        await showError('Format tidak valid', 'Periksa format teks import Anda')
+        setImporting(false)
+        return
+      }
       await api.post('/bank-soals/import', { items })
-      alert(`${items.length} soal berhasil diimport`)
+      await showSuccess('Berhasil', `${items.length} soal berhasil diimport`)
       setShowImport(false)
       setImportText('')
-      load()
+      goToPage(1)
     } catch (e) { alert(e.response?.data?.message || 'Gagal import soal') } finally { setImporting(false) }
   }
 
@@ -154,26 +186,33 @@ function BankSoal() {
 
       {!showForm && !showImport && (
         <div className="rounded-2xl border border-[#262636] bg-[#14141E] shadow-sm">
-          <div className="flex flex-wrap items-center gap-3 border-b border-[#262636] px-6 py-4">
-            <div className="flex flex-wrap items-center gap-3 flex-1">
+            <div className="flex flex-wrap items-center gap-2 border-b border-[#262636] px-6 py-3">
+            <div className="flex flex-wrap items-center gap-2 flex-1">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                <input className="h-10 w-44 rounded-full border border-[#262636] bg-[#1A1A26] pl-9 pr-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" placeholder="Cari pertanyaan..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                <input className="h-8 w-36 rounded-full border border-[#262636] bg-[#1A1A26] pl-8 pr-3 text-xs text-slate-100 placeholder-slate-500 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" placeholder="Cari..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <div className="relative">
-                <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                <select className="h-10 appearance-none rounded-full border border-[#262636] bg-[#1A1A26] pl-9 pr-8 text-sm text-slate-100 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" value={filterJenis} onChange={(e) => setFilterJenis(e.target.value)}>
+                <Filter className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
+                <select className="h-8 appearance-none rounded-full border border-[#262636] bg-[#1A1A26] pl-8 pr-7 text-xs text-slate-100 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" value={filterJenis} onChange={(e) => setFilterJenis(e.target.value)}>
                   <option value="">Semua Jenis</option><option value="pilihan_ganda">Pilihan Ganda</option><option value="essay">Essay</option>
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
               </div>
               <div className="relative">
-                <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                <select className="h-10 appearance-none rounded-full border border-[#262636] bg-[#1A1A26] pl-9 pr-8 text-sm text-slate-100 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" value={filterKompetensi} onChange={(e) => setFilterKompetensi(e.target.value)}>
+                <Filter className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
+                <select className="h-8 appearance-none rounded-full border border-[#262636] bg-[#1A1A26] pl-8 pr-7 text-xs text-slate-100 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" value={filterTipe} onChange={(e) => setFilterTipe(e.target.value)}>
+                  <option value="">Semua Tipe</option><option value="quiz">Quiz</option><option value="pretest">Pretest</option><option value="asesmen">Asesmen</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
+              </div>
+              <div className="relative">
+                <Filter className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
+                <select className="h-8 max-w-[160px] appearance-none rounded-full border border-[#262636] bg-[#1A1A26] pl-8 pr-7 text-xs text-slate-100 outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" value={filterKompetensi} onChange={(e) => setFilterKompetensi(e.target.value)}>
                   <option value="">Semua Kompetensi</option>
                   {kompetensis.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -193,25 +232,26 @@ function BankSoal() {
                 <p className="mt-1 text-xs text-slate-500">Silakan tambah data baru atau import soal</p>
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="text-xs uppercase tracking-wider text-slate-500">
+              <table className="w-full text-left text-xs">
+                <thead className="uppercase tracking-wider text-slate-500">
                   <tr className="border-b border-[#262636] bg-[#09090E]">
-                    <th className="px-4 py-3 font-semibold">Soal</th><th className="px-4 py-3 font-semibold">Kompetensi</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Jenis</th><th className="px-4 py-3 font-semibold hidden lg:table-cell">Jawaban</th><th className="px-4 py-3 font-semibold text-center w-16">Bobot</th><th className="px-4 py-3 font-semibold w-20">Status</th><th className="px-4 py-3 text-left font-semibold w-28 translate-x-[25px]">Aksi</th>
+                    <th className="px-3 py-2.5 font-semibold">Soal</th><th className="px-3 py-2.5 font-semibold">Kompetensi</th><th className="px-3 py-2.5 font-semibold hidden md:table-cell">Level</th><th className="px-3 py-2.5 font-semibold hidden md:table-cell">Jenis</th><th className="px-3 py-2.5 font-semibold hidden md:table-cell">Tipe</th><th className="px-3 py-2.5 font-semibold hidden lg:table-cell">Jawaban</th><th className="px-3 py-2.5 font-semibold text-center w-14">Bobot</th><th className="px-3 py-2.5 font-semibold w-16">Status</th><th className="px-3 py-2.5 text-left font-semibold w-24 translate-x-[20px]">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#262636]">
                   {rows.map((row) => (
                     <tr className="transition hover:bg-white/[0.02]" key={row.id}>
-                      <td className="px-4 py-3 max-w-xs"><p className="truncate font-medium text-slate-100" title={row.pertanyaan}>{row.pertanyaan}</p></td>
-                      <td className="px-4 py-3 text-slate-400 w-32 truncate">{row.kompetensi?.nama || '-'}</td>
-                      <td className="px-4 py-3 text-slate-400 hidden md:table-cell w-24">{row.level?.nama || '-'}</td>
-                      <td className="px-4 py-3 hidden md:table-cell"><span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-400">{row.jenis === 'pilihan_ganda' ? 'PG' : 'Essay'}</span></td>
-                      <td className="px-4 py-3 text-xs font-medium text-slate-300 hidden lg:table-cell max-w-[120px] truncate">{row.jawaban_benar || '-'}</td>
-                      <td className="px-4 py-3 text-center text-slate-300">{row.bobot}</td>
-                      <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${row.is_active ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-400/20' : 'bg-slate-500/10 text-slate-400 ring-slate-400/20'}`}>{row.is_active ? 'Aktif' : '-'}</span></td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        {can(user, 'bank-soal.update') && <button onClick={() => openEdit(row)} className="mr-2 inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-4 w-4" /></button>}
-                        {can(user, 'bank-soal.delete') && <button onClick={() => remove(row)} className="inline-flex items-center justify-center rounded-xl border border-rose-600/20 p-2 text-sm text-rose-400 transition-colors hover:bg-rose-500/10" title="Hapus"><Trash2 className="h-4 w-4" /></button>}
+                      <td className="px-3 py-2.5 max-w-xs"><p className="truncate font-medium text-slate-100 text-xs" title={row.pertanyaan}>{row.pertanyaan}</p></td>
+                      <td className="px-3 py-2.5 text-slate-400 w-28 truncate text-xs">{row.kompetensi?.nama || '-'}</td>
+                      <td className="px-3 py-2.5 text-slate-400 hidden md:table-cell w-20 text-xs">{row.level?.nama || '-'}</td>
+                      <td className="px-3 py-2.5 hidden md:table-cell"><span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-indigo-400 bg-indigo-500/10">{row.jenis === 'pilihan_ganda' ? 'PG' : 'Essay'}</span></td>
+                      <td className="px-3 py-2.5 hidden md:table-cell"><div className="flex gap-1 flex-wrap">{(Array.isArray(row.tipe) ? row.tipe : ['quiz']).map(t => <span key={t} className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${t === 'quiz' ? 'bg-sky-500/10 text-sky-400' : t === 'pretest' ? 'bg-amber-500/10 text-amber-400' : 'bg-violet-500/10 text-violet-400'}`}>{t}</span>)}</div></td>
+                      <td className="px-3 py-2.5 text-slate-300 hidden lg:table-cell max-w-[100px] truncate text-xs">{row.jawaban_benar || '-'}</td>
+                      <td className="px-3 py-2.5 text-center text-slate-300 text-xs">{row.bobot}</td>
+                      <td className="px-3 py-2.5"><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${row.is_active ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-400/20' : 'bg-slate-500/10 text-slate-400 ring-slate-400/20'}`}>{row.is_active ? 'Aktif' : '-'}</span></td>
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                        {can(user, 'bank-soal.update') && <button onClick={() => openEdit(row)} className="mr-1.5 inline-flex items-center justify-center rounded-lg border border-[#262636] p-1.5 text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>}
+                        {can(user, 'bank-soal.delete') && <button onClick={() => remove(row)} className="inline-flex items-center justify-center rounded-lg border border-rose-600/20 p-1.5 text-rose-400 transition-colors hover:bg-rose-500/10" title="Hapus"><Trash2 className="h-3.5 w-3.5" /></button>}
                       </td>
                     </tr>
                   ))}
@@ -219,6 +259,22 @@ function BankSoal() {
               </table>
             )}
           </div>
+          {/* Pagination */}
+          {!loading && lastPage > 1 && (
+            <div className="flex items-center justify-between border-t border-[#262636] px-6 py-3">
+              <span className="text-xs text-slate-500">{total} soal - Halaman {page} dari {lastPage}</span>
+              <div className="flex gap-1">
+                <button disabled={page <= 1} onClick={() => goToPage(page - 1)} className="rounded-lg border border-[#262636] px-3 py-1 text-xs font-medium text-slate-300 transition hover:bg-[#1A1A26] disabled:opacity-30 disabled:pointer-events-none">Prev</button>
+                {Array.from({length: Math.min(5, lastPage)}, (_, i) => {
+                  const start = Math.max(1, Math.min(page - 2, lastPage - 4))
+                  const p = start + i
+                  if (p > lastPage) return null
+                  return <button key={p} onClick={() => goToPage(p)} className={`rounded-lg border px-3 py-1 text-xs font-medium transition ${p === page ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'border-[#262636] text-slate-400 hover:bg-[#1A1A26]'}`}>{p}</button>
+                })}
+                <button disabled={page >= lastPage} onClick={() => goToPage(page + 1)} className="rounded-lg border border-[#262636] px-3 py-1 text-xs font-medium text-slate-300 transition hover:bg-[#1A1A26] disabled:opacity-30 disabled:pointer-events-none">Next</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -236,7 +292,7 @@ function BankSoal() {
               <input ref={fileInputRef} type="file" accept=".csv,.txt" className="hidden" onChange={handleFileImport} />
               <span className="text-xs text-slate-500">atau tempel teks</span>
             </div>
-            <textarea className="h-40 w-full rounded-xl border border-[#262636] bg-[#1A1A26] p-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" placeholder={'Format: Nama Kompetensi | Pertanyaan | Jawaban | Pembahasan | jenis | bobot | OpsiA | OpsiB | OpsiC | OpsiD\n\nContoh:\nSatu Data Indonesia | Apa itu SDI? | Kebijakan tata kelola data | Perpres 39/2019 | pilihan_ganda | 1 | Definisi A | Definisi B | Definisi C | Definisi D\nStatistik Sektoral | Sebutkan jenis statistik! | - | - | essay | 2'} value={importText} onChange={(e) => setImportText(e.target.value)} />
+            <textarea className="h-40 w-full rounded-xl border border-[#262636] bg-[#1A1A26] p-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" placeholder={'Format: Nama Kompetensi | Pertanyaan | Jawaban | Pembahasan | jenis | bobot | OpsiA | OpsiB | OpsiC | OpsiD\nTipe: quiz, pretest, asesmen (default: quiz)\n\nContoh:\nSatu Data Indonesia | Apa itu SDI? | Kebijakan tata kelola data | Perpres 39/2019 | pilihan_ganda | 1 | Definisi A | Definisi B | Definisi C | Definisi D\nStatistik Sektoral | Sebutkan jenis statistik! | - | - | essay | 2'} value={importText} onChange={(e) => setImportText(e.target.value)} />
             <div className="flex justify-end gap-3">
               <button onClick={() => { setShowImport(false); setImportText('') }} className="rounded-full border border-[#262636] px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:border-indigo-500/30 hover:text-indigo-400">Batal</button>
               <button onClick={handleImport} disabled={importing || !importText.trim()} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50">{importing ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> Mengimport...</> : 'Import Soal'}</button>
@@ -256,7 +312,8 @@ function BankSoal() {
             <div className="col-span-3"><label className={labelClass}>Level</label><select className={inputClass} {...register('level_id')}><option value="">Semua Level</option>{levels.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
             <div className="col-span-3"><label className={labelClass}>Bobot <span className="text-rose-400">*</span></label><input className={inputClass} type="number" step="0.1" placeholder="Masukkan bobot" {...register('bobot', { required: true })} /></div>
             <div className="col-span-6"><label className={labelClass}>Jenis Soal</label><select className={inputClass} {...register('jenis')}><option value="pilihan_ganda">Pilihan Ganda</option><option value="essay">Essay</option></select></div>
-            <div className="col-span-6"><label className={labelClass}>Status</label><select className={inputClass} {...register('is_active')}><option value={1}>Aktif</option><option value={0}>Nonaktif</option></select></div>
+            <div className="col-span-3"><label className={labelClass}>Tipe <span className="text-rose-400">*</span></label><div className="flex flex-wrap gap-1.5 p-3 rounded-xl border border-[#262636] bg-[#1A1A26]">{['quiz', 'pretest', 'asesmen'].map((t) => <button key={t} type="button" onClick={() => setSelectedTipe(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])} className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${selectedTipe.includes(t) ? (t === 'quiz' ? 'bg-sky-500/20 text-sky-400' : t === 'pretest' ? 'bg-amber-500/20 text-amber-400' : 'bg-violet-500/20 text-violet-400') : 'bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 hover:text-slate-300'}`}>{t.charAt(0).toUpperCase() + t.slice(1)}</button>)}</div></div>
+            <div className="col-span-3"><label className={labelClass}>Status</label><select className={inputClass} {...register('is_active')}><option value={1}>Aktif</option><option value={0}>Nonaktif</option></select></div>
             <div className="col-span-12"><label className={labelClass}>Pertanyaan <span className="text-rose-400">*</span></label><textarea className={inputClass} rows="3" placeholder="Tulis pertanyaan" {...register('pertanyaan', { required: true })} /></div>
             {jenis === 'pilihan_ganda' ? <>
               <div className="col-span-6"><label className={labelClass}>Pilihan A</label><input className={inputClass} placeholder="Tulis pilihan A" {...register('pilihan_a')} /></div>

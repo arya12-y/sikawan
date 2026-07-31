@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Clock, FileCheck, FileText, GraduationCap, RefreshCw, Trophy, XCircle } from 'lucide-react'
 import api from '../../api/axios'
 import { useAuth } from '../../hooks/useAuth'
+import { showError, showSuccess, showConfirm } from '../../utils/alert'
 
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
 
@@ -45,9 +46,7 @@ function Pretest() {
       setSecondsLeft(Number(data.durasi || 30) * 60)
       setStep('exam')
     } catch (e) {
-      const isDark = document.documentElement.classList.contains('dark')
-      const Swal = (await import('sweetalert2')).default
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal memulai pretest', confirmButtonText: 'Tutup', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+      showError('Gagal', e.response?.data?.message || 'Gagal memulai pretest', 'Tutup')
     } finally {
       setLoading(false)
     }
@@ -56,23 +55,18 @@ function Pretest() {
   const isAdmin = user?.roles?.some(r => ['Super Admin', 'Admin Diskominfo'].includes(r))
 
   const resetPretest = useCallback(async () => {
-    const Swal = (await import('sweetalert2')).default
-    const isDark = document.documentElement.classList.contains('dark')
-    const result = await Swal.fire({
-      title: 'Reset pretest?',
-      text: 'Semua jawaban dan nilai pretest akan dihapus. Anda bisa mengulang pretest.',
-      icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Reset',
-      cancelButtonText: 'Batal', reverseButtons: true, confirmButtonColor: '#EF4444',
-      background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-      customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-    })
-    if (!result.isConfirmed) return
+    const confirmed = await showConfirm(
+      'Reset pretest?',
+      'Semua jawaban dan nilai pretest akan dihapus. Anda bisa mengulang pretest.',
+      'Ya, Reset'
+    )
+    if (!confirmed) return
     try {
       await api.post('/pretest/reset', { user_id: user.id })
       setStatus(prev => ({ ...prev, pretest_done: false }))
-      Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Pretest telah direset. Silakan ulangi.', confirmButtonText: 'OK', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+      showSuccess('Berhasil', 'Pretest telah direset. Silakan ulangi.')
     } catch (e) {
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal reset pretest', confirmButtonText: 'Tutup', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+      showError('Gagal', e.response?.data?.message || 'Gagal reset pretest', 'Tutup')
     }
   }, [user])
 
@@ -94,22 +88,14 @@ function Pretest() {
 
   const submitPretest = useCallback(async (auto = false) => {
     if (!auto) {
-      const Swal = (await import('sweetalert2')).default
-      const isDark = document.documentElement.classList.contains('dark')
-      const result = await Swal.fire({
-        title: 'Kumpulkan pretest?',
-        text: 'Jawaban yang sudah dikirim tidak dapat diubah lagi.',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, kumpulkan',
-        cancelButtonText: 'Batal',
-        reverseButtons: true,
-        confirmButtonColor: '#6366f1',
-        background: isDark ? '#14141E' : '#FFFFFF',
-        color: isDark ? '#F1F5F9' : '#0F172A',
-        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-      })
-      if (!result.isConfirmed) return
+      const confirmed = await showConfirm(
+        'Kumpulkan pretest?',
+        'Jawaban yang sudah dikirim tidak dapat diubah lagi.',
+        'Ya, kumpulkan',
+        'Batal',
+        'question'
+      )
+      if (!confirmed) return
     }
 
     try {
@@ -122,9 +108,7 @@ function Pretest() {
       setResult(res.data)
       setStep('result')
     } catch (e) {
-      const isDark = document.documentElement.classList.contains('dark')
-      const Swal = (await import('sweetalert2')).default
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal submit pretest', confirmButtonText: 'Tutup', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+      showError('Gagal', e.response?.data?.message || 'Gagal submit pretest', 'Tutup')
     } finally {
       setSubmitting(false)
     }
@@ -212,14 +196,22 @@ function Pretest() {
               )}
             </div>
           </div>
+        ) : !isAdmin && !status?.pretest_activated ? (
+          <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30 mb-5">
+              <Clock className="h-8 w-8 text-white" />
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400 mb-3">Menunggu Aktivasi</span>
+            <h2 className="mt-3 text-2xl font-bold text-slate-100">Pretest Belum Aktif</h2>
+            <p className="mt-2 text-sm text-slate-400">Admin belum mengaktifkan pretest untuk akun Anda. Silakan hubungi admin untuk mengaktifkan pretest.</p>
+          </div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-7 shadow-sm">
-              <h3 className="text-base font-bold text-slate-100 mb-4">Apa itu Pretest?</h3>
-              <ul className="space-y-3">
+<div className="rounded-2xl border border-[#262636] bg-[#14141E] p-7 shadow-sm">
+              <h3 className="text-base font-bold text-slate-100 mb-4">Atur Waktu Pretest</h3>
+              <ul className="space-y-3 mb-5">
                 {[
                   { icon: GraduationCap, text: 'Pretest terdiri dari beberapa soal dari berbagai kompetensi' },
-                  { icon: Clock, text: 'Durasi pengerjaan 30 menit' },
                   { icon: Trophy, text: 'Hasil pretest menentukan level awal Anda' },
                   { icon: BookOpen, text: 'Rekomendasi materi akan disesuaikan dengan level Anda' },
                 ].map((item, i) => (
@@ -240,7 +232,7 @@ function Pretest() {
               {loading ? (
                 <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> Memulai...</>
               ) : (
-                <><FileCheck className="h-4 w-4" /> Ikuti Pretest</>
+                <><FileCheck className="h-4 w-4" /> Mulai Pretest</>
               )}
             </button>
           </div>

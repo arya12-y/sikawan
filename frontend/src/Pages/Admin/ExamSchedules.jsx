@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Plus, X, Trash2 } from 'lucide-react'
+import { Calendar, Plus, X, Trash2, UserCheck, FileCheck, ClipboardCheck, Award, Play } from 'lucide-react'
 import api from '../../api/axios'
 import { useAuth } from '../../hooks/useAuth'
 import { can } from '../../utils/can'
 import { confirmDelete } from '../../utils/confirm'
-import Swal from 'sweetalert2'
+import { showError, showSuccess } from '../../utils/alert'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
@@ -17,6 +17,8 @@ function ExamSchedules() {
   const [current, setCurrent] = useState(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState(null)
+  const [selectedScheduleId, setSelectedScheduleId] = useState('active')
   const [form, setForm] = useState({
     title: '',
     pretest_start: '',
@@ -25,6 +27,7 @@ function ExamSchedules() {
     exam_end: '',
     kompetensi_ids: [],
     pretest_jumlah_per_kompetensi: 5,
+    pretest_durasi: 30,
     status: 'draft',
   })
   const { user } = useAuth()
@@ -42,6 +45,11 @@ function ExamSchedules() {
     }
   }, [])
   useEffect(() => { queueMicrotask(() => load()) }, [load])
+  const fetchStats = useCallback(() => {
+    const url = selectedScheduleId === 'active' ? '/exam-schedules/stats' : `/exam-schedules/stats?schedule_id=${selectedScheduleId}`
+    api.get(url).then(r => setStats(r.data)).catch(() => setStats(null))
+  }, [selectedScheduleId])
+  useEffect(() => { fetchStats() }, [fetchStats])
 
   const toDatetimeLocal = (date) => {
     if (!date) return ''
@@ -55,7 +63,7 @@ function ExamSchedules() {
     setForm({
       title: '', pretest_start: '', pretest_end: '',
       exam_start: '', exam_end: '',
-      kompetensi_ids: [], pretest_jumlah_per_kompetensi: 5, status: 'draft',
+      kompetensi_ids: [], pretest_jumlah_per_kompetensi: 5, pretest_durasi: 30, status: 'draft',
     })
     setShowModal(true)
   }
@@ -70,6 +78,7 @@ function ExamSchedules() {
       exam_end: toDatetimeLocal(row.exam_end),
       kompetensi_ids: row.kompetensi_ids || [],
       pretest_jumlah_per_kompetensi: row.pretest_jumlah_per_kompetensi || 5,
+      pretest_durasi: row.pretest_durasi || 30,
       status: row.status || 'draft',
     })
     setShowModal(true)
@@ -101,16 +110,17 @@ function ExamSchedules() {
         exam_end: form.exam_end ? new Date(form.exam_end).toISOString() : null,
         kompetensi_ids: form.kompetensi_ids,
         pretest_jumlah_per_kompetensi: Number(form.pretest_jumlah_per_kompetensi || 5),
+        pretest_durasi: Number(form.pretest_durasi || 30),
         is_active: form.status === 'published' || form.status === 'active',
         status: form.status,
       }
       if (current?.id) await api.put(`/exam-schedules/${current.id}`, payload)
       else await api.post('/exam-schedules', payload)
       await load()
+      await showSuccess('Berhasil', 'Jadwal berhasil disimpan')
       setShowModal(false)
     } catch (err) {
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Gagal menyimpan jadwal', confirmButtonText: 'Tutup', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+      showError('Gagal', err.response?.data?.message || 'Gagal menyimpan jadwal', 'Tutup')
     } finally {
       setSaving(false)
     }
@@ -122,8 +132,7 @@ function ExamSchedules() {
         await api.delete(`/exam-schedules/${row.id}`)
         load()
       } catch (err) {
-        const isDark = document.documentElement.classList.contains('dark')
-        Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Gagal menghapus jadwal', confirmButtonText: 'Tutup', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+        showError('Gagal', err.response?.data?.message || 'Gagal menghapus jadwal', 'Tutup')
       }
     }
   }
@@ -157,6 +166,39 @@ function ExamSchedules() {
           </div>
         </div>
       </div>
+
+      {/* Stats Selector */}
+      {schedules.length > 0 && (
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-slate-400">Lihat statistik jadwal:</label>
+          <select className="h-8 rounded-full border border-[#262636] bg-[#1A1A26] px-3 text-xs text-slate-100 outline-none" value={selectedScheduleId} onChange={(e) => setSelectedScheduleId(e.target.value)}>
+            <option value="active">— Jadwal Aktif —</option>
+            {schedules.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+          </select>
+
+        </div>
+      )}
+      {stats && !stats.active && (
+        <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-6 text-center text-sm text-slate-500">Tidak ada data untuk jadwal ini.</div>
+      )}
+      {stats && stats.active && (
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          {[
+            { label: 'Total Walidata', value: stats.total_walidata, icon: UserCheck, color: 'from-indigo-600 to-indigo-800' },
+            { label: 'Belum Pretest', value: stats.belum_pretest, icon: Play, color: 'from-amber-600 to-amber-800' },
+            { label: 'Pretest Selesai', value: stats.pretest_selesai, icon: FileCheck, color: 'from-sky-600 to-cyan-800' },
+            { label: 'Sedang Asesmen', value: stats.sedang_asesmen, icon: ClipboardCheck, color: 'from-violet-600 to-purple-800' },
+            { label: 'Asesmen Selesai', value: stats.asesmen_selesai, icon: Award, color: 'from-emerald-600 to-emerald-800' },
+            { label: 'Lulus', value: stats.lulus, icon: Award, color: 'from-cyan-600 to-teal-800' },
+          ].map((s) => (
+            <div key={s.label} className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${s.color} p-4 shadow-lg`}>
+              <s.icon className="absolute right-2 top-2 h-8 w-8 text-white/10" />
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/70">{s.label}</p>
+              <p className="mt-1 text-2xl font-bold text-white">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       <div className="rounded-2xl border border-[#262636] bg-[#14141E] shadow-sm">
@@ -232,7 +274,7 @@ function ExamSchedules() {
                 <div><label className={labelClass}>Ujian (Asesmen) Selesai</label><input type="datetime-local" className={inputClass} name="exam_end" value={form.exam_end} onChange={handleChange} /></div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className={labelClass}>Status</label>
                   <select className={inputClass} name="status" value={form.status} onChange={handleChange}>
@@ -241,22 +283,26 @@ function ExamSchedules() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelClass}>Jumlah Pretest Per Kompetensi</label>
+                  <label className={labelClass}>Jumlah Soal Per Kompetensi</label>
                   <input type="number" className={inputClass} name="pretest_jumlah_per_kompetensi" value={form.pretest_jumlah_per_kompetensi} onChange={handleChange} min="0" />
+                </div>
+                <div>
+                  <label className={labelClass}>Durasi Pretest (menit)</label>
+                  <input type="number" className={inputClass} name="pretest_durasi" value={form.pretest_durasi} onChange={handleChange} min="5" max="120" />
                 </div>
               </div>
 
               <div>
                 <label className={labelClass}>Kompetensi</label>
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto rounded-xl border border-[#262636] bg-[#1A1A26] p-3">
-                  {kompetensis.length === 0 && <p className="text-sm text-slate-500 col-span-2">Tidak ada kompetensi</p>}
+                <div className="flex flex-wrap gap-1.5 p-3 rounded-xl border border-[#262636] bg-[#1A1A26]">
+                  {kompetensis.length === 0 && <p className="text-xs text-slate-500">Tidak ada kompetensi</p>}
                   {kompetensis.map((item) => (
-                    <label key={item.id} className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${
-                      form.kompetensi_ids.includes(item.id) ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-white/5'
-                    }`}>
-                      <input type="checkbox" name="kompetensi_ids" value={item.id} checked={form.kompetensi_ids.includes(item.id)} onChange={handleChange} className="h-4 w-4 accent-indigo-500 rounded" />
-                      <span className="truncate">{item.nama}</span>
-                    </label>
+                    <button key={item.id} type="button" onClick={() => {
+                      const checked = form.kompetensi_ids.includes(item.id)
+                      handleChange({ target: { name: 'kompetensi_ids', value: item.id, type: 'checkbox', checked: !checked } })
+                    }} className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                      form.kompetensi_ids.includes(item.id) ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 hover:text-slate-300'
+                    }`}>{item.nama}</button>
                   ))}
                 </div>
               </div>

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { can } from '../../utils/can'
 import api from '../../api/axios'
-import Swal from 'sweetalert2'
+import { showConfirm, showError, showSuccess } from '../../utils/alert'
 
 const normalizeRows = (payload) => {
   const rows = payload?.data ?? payload
@@ -17,6 +17,7 @@ function Monitoring() {
   const [loading, setLoading] = useState(true)
   const [pretestRows, setPretestRows] = useState([])
   const [pretestLoading, setPretestLoading] = useState(false)
+  const [pendingActivation, setPendingActivation] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -35,62 +36,112 @@ function Monitoring() {
   }, [])
 
   useEffect(() => { queueMicrotask(() => { load(); loadPretest() }) }, [load, loadPretest])
+  useEffect(() => { api.get('/pretest/pending').then(r => setPendingActivation(Array.isArray(r.data) ? r.data : [])).catch(() => {}) }, [])
+  useEffect(() => { const t = setInterval(() => { load(); loadPretest() }, 30000); return () => clearInterval(t) }, [load, loadPretest])
 
   const resetExam = async (row) => {
-    const isDark = document.documentElement.classList.contains('dark')
-    const result = await Swal.fire({
-      title: 'Reset ujian?',
-      text: `"${row.user?.name}" — "${row.asesmen?.judul}". Jawaban dan sertifikat akan dihapus.`,
-      icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Reset',
-      cancelButtonText: 'Batal', reverseButtons: true, confirmButtonColor: '#EF4444',
-      background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-      customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-    })
-    if (!result.isConfirmed) return
+    const confirmed = await showConfirm(
+      'Reset ujian?',
+      `"${row.user?.name}" — "${row.asesmen?.judul}". Jawaban dan sertifikat akan dihapus.`,
+      'Ya, Reset',
+      'Batal',
+      'warning'
+    )
+    if (!confirmed) return
     try {
       await api.post(`/peserta-asesmens/${row.id}/reset`)
       load()
     } catch (e) {
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal reset', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+      await showError('Gagal', e.response?.data?.message || 'Gagal reset')
+    }
+  }
+
+  const deleteMonitoring = async (row) => {
+    const confirmed = await showConfirm(
+      'Hapus data?',
+      `"${row.user?.name}" — "${row.asesmen?.judul}". Data akan dihapus permanen.`,
+      'Ya, Hapus',
+      'Batal',
+      'warning'
+    )
+    if (!confirmed) return
+    try {
+      await api.delete(`/monitoring/${row.id}`)
+      load()
+      await showSuccess('Dihapus', 'Data monitoring berhasil dihapus.')
+    } catch (e) {
+      await showError('Gagal', e.response?.data?.message || 'Gagal hapus')
     }
   }
 
   const resetPretest = async (row) => {
-    const isDark = document.documentElement.classList.contains('dark')
-    const result = await Swal.fire({
-      title: 'Reset pretest?',
-      text: `"${row.user_name}" — Semua jawaban pretest akan dihapus.`,
-      icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Reset',
-      cancelButtonText: 'Batal', reverseButtons: true, confirmButtonColor: '#EF4444',
-      background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-      customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-    })
-    if (!result.isConfirmed) return
+    const confirmed = await showConfirm(
+      'Reset pretest?',
+      `"${row.user_name}" — Semua jawaban pretest akan dihapus.`,
+      'Ya, Reset',
+      'Batal',
+      'warning'
+    )
+    if (!confirmed) return
     try {
       await api.post('/pretest/reset', { user_id: row.user_id })
       loadPretest()
     } catch (e) {
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal reset pretest', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1', customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn' } })
+      await showError('Gagal', e.response?.data?.message || 'Gagal reset pretest')
     }
   }
 
   const cleanupPretest = async () => {
-    const isDark = document.documentElement.classList.contains('dark')
-    const Swal = (await import('sweetalert2')).default
-    const result = await Swal.fire({
-      title: 'Bersihkan data sampah?',
-      text: 'Data pretest dari akun yang sudah dihapus akan dibersihkan.',
-      icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, bersihkan', cancelButtonText: 'Batal', reverseButtons: true, confirmButtonColor: '#EF4444',
-      background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-      customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-    })
-    if (!result.isConfirmed) return
+    const confirmed = await showConfirm(
+      'Bersihkan data sampah?',
+      'Data pretest dari akun yang sudah dihapus akan dibersihkan.',
+      'Ya, bersihkan',
+      'Batal',
+      'warning'
+    )
+    if (!confirmed) return
     try {
       const res = await api.post('/pretest/cleanup')
-      Swal.fire({ icon: 'success', title: 'Berhasil', text: res.data?.message || `${res.data?.deleted || 0} data dibersihkan`, confirmButtonText: 'OK', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      await showSuccess('Berhasil', res.data?.message || `${res.data?.deleted || 0} data dibersihkan`)
       loadPretest()
     } catch (e) {
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal bersihkan data', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      await showError('Gagal', e.response?.data?.message || 'Gagal bersihkan data')
+    }
+  }
+
+  const activatePretest = async (userId, userName) => {
+    const confirmed = await showConfirm(
+      'Aktifkan pretest?',
+      `Pretest untuk "${userName}" akan diaktifkan.`,
+      'Ya, Aktifkan',
+      'Batal',
+      'question'
+    )
+    if (!confirmed) return
+    try {
+      await api.post('/pretest/activate', { user_id: userId })
+      setPendingActivation(prev => prev.filter(p => p.user_id !== userId))
+      await showSuccess('Aktif', `Pretest untuk ${userName} sudah aktif.`)
+    } catch (e) {
+      await showError('Gagal', e.response?.data?.message || 'Gagal aktivasi')
+    }
+  }
+
+  const activateAllPretest = async () => {
+    const confirmed = await showConfirm(
+      'Aktifkan semua?',
+      `Pretest untuk ${pendingActivation.length} walidata akan diaktifkan sekaligus.`,
+      'Ya, Aktifkan Semua',
+      'Batal',
+      'question'
+    )
+    if (!confirmed) return
+    try {
+      const res = await api.post('/pretest/activate-all')
+      setPendingActivation([])
+      await showSuccess('Berhasil', res.data?.message || 'Semua walidata diaktifkan')
+    } catch (e) {
+      await showError('Gagal', e.response?.data?.message || 'Gagal aktivasi massal')
     }
   }
 
@@ -99,10 +150,6 @@ function Monitoring() {
     selesai: rows.filter((r) => r.status === 'selesai').length,
     lulus: rows.filter((r) => r.lulus).length,
     sedang: rows.filter((r) => r.status !== 'selesai').length,
-  }
-
-  const pretestStats = {
-    total: pretestRows.length,
   }
 
   return (
@@ -130,6 +177,23 @@ function Monitoring() {
             { label: 'Sedang Mengerjakan', value: asesmenStats.sedang, icon: Play, color: 'from-amber-600 to-amber-800' },
             { label: 'Selesai', value: asesmenStats.selesai, icon: CheckCircle, color: 'from-emerald-600 to-emerald-800' },
             { label: 'Lulus', value: asesmenStats.lulus, icon: Award, color: 'from-cyan-600 to-cyan-800' },
+          ].map((s) => (
+            <div key={s.label} className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${s.color} p-5 shadow-lg`}>
+              <s.icon className="absolute right-3 top-3 h-10 w-10 text-white/10" />
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/70">{s.label}</p>
+              <p className="mt-1.5 text-3xl font-bold text-white">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'pretest' && (
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            { label: 'Total Peserta', value: pretestRows.length, icon: UserCheck, color: 'from-indigo-600 to-indigo-800' },
+            { label: 'Rata-rata Nilai', value: pretestRows.length ? Math.round(pretestRows.reduce((s, r) => s + (r.rata_rata || 0), 0) / pretestRows.length) : 0, icon: Award, color: 'from-cyan-600 to-cyan-800' },
+            { label: 'Level Pemula', value: pretestRows.filter(r => (r.level_name || '').toLowerCase().includes('pemula')).length, icon: Play, color: 'from-amber-600 to-amber-800' },
+            { label: 'Level Lanjutan', value: pretestRows.filter(r => !(r.level_name || '').toLowerCase().includes('pemula') && r.level_name).length, icon: CheckCircle, color: 'from-emerald-600 to-emerald-800' },
           ].map((s) => (
             <div key={s.label} className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${s.color} p-5 shadow-lg`}>
               <s.icon className="absolute right-3 top-3 h-10 w-10 text-white/10" />
@@ -200,9 +264,12 @@ function Monitoring() {
                             <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-400"><Play className="h-3 w-3" /> Mengerjakan</span>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-right">
-                          {completed && (user?.roles?.includes('Super Admin') || user?.roles?.includes('Admin Diskominfo')) && (
-                            <button onClick={() => resetExam(row)} className="rounded-lg px-2.5 py-1 text-xs font-medium text-rose-400 transition hover:bg-rose-500/10">Reset</button>
+                        <td className="px-5 py-4 text-right whitespace-nowrap">
+                          {(user?.roles?.includes('Super Admin') || user?.roles?.includes('Admin Diskominfo')) && (
+                            <>
+                              {completed && <button onClick={() => resetExam(row)} className="rounded-lg px-2.5 py-1 text-xs font-medium text-rose-400 transition hover:bg-rose-500/10">Reset</button>}
+                              <button onClick={() => deleteMonitoring(row)} className="ml-1 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-200"><Trash2 className="inline-block h-3 w-3 -mt-0.5" /> Hapus</button>
+                            </>
                           )}
                         </td>
                       </tr>
@@ -215,6 +282,29 @@ function Monitoring() {
         )}
 
         {/* Tab: Pretest */}
+        {tab === 'pretest' && (
+          /* Pending Activation */
+          pendingActivation.length > 0 && (
+            <div className="border-b border-[#262636] p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <FileCheck className="h-4 w-4 text-amber-400" />
+                <h4 className="text-sm font-bold text-slate-100">Aktivasi Pretest ({pendingActivation.length} menunggu)</h4>
+                {pendingActivation.length > 1 && (
+                  <button onClick={activateAllPretest} className="rounded-full bg-indigo-500/20 px-3 py-1 text-[10px] font-medium text-indigo-400 hover:bg-indigo-500/30 transition ml-auto">Aktifkan Semua</button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {pendingActivation.map((p) => (
+                  <div key={p.user_id} className="flex items-center gap-2 rounded-full border border-[#262636] bg-[#1A1A26] pl-3 pr-1.5 py-1">
+                    <span className="text-xs text-slate-300">{p.user_name}</span>
+                    <span className="text-[10px] text-slate-500">{p.opd}</span>
+                    <button onClick={() => activatePretest(p.user_id, p.user_name)} className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-medium text-indigo-400 hover:bg-indigo-500/30 transition">Aktifkan</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        )}
         {tab === 'pretest' && (
           pretestLoading ? (
             <div className="flex items-center justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>

@@ -5,6 +5,8 @@ import api from '../../api/axios'
 import { can } from '../../utils/can'
 import { useAuth } from '../../hooks/useAuth'
 import { confirmDelete } from '../../utils/confirm'
+import { toast } from '../../utils/toast'
+import { showSuccess, showError } from '../../utils/alert'
 
 const inputClass = 'w-full rounded-xl border border-[#1E1E2E] bg-[#14141E] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
 const buttonClass = 'inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60'
@@ -38,7 +40,7 @@ function GenericMasterPage({ endpoint, fields, title, filters = [] }) {
       const res = await api.get(endpoint, { params })
       setRows(normalizeRows(res.data))
     } catch (error) {
-      alert(error.response?.data?.message || `Gagal memuat ${title}`)
+      toast('error', error.response?.data?.message || `Gagal memuat ${title}`)
     } finally {
       setLoading(false)
     }
@@ -46,8 +48,8 @@ function GenericMasterPage({ endpoint, fields, title, filters = [] }) {
 
   useEffect(() => { queueMicrotask(() => load()) }, [])
   useEffect(() => { if (search || filter) { const t = setTimeout(() => load(), 300); return () => clearTimeout(t) } }, [search, filter])
-  const save = async (data) => { setSaving(true); try { if (current?.id) await api.put(`${endpoint}/${current.id}`, data); else await api.post(endpoint, data); setCurrent(null); setShowForm(false); load() } catch (error) { const validationErrors = error.response?.data?.errors; alert(validationErrors ? Object.values(validationErrors).flat().join('\n') : error.response?.data?.message || `Gagal menyimpan ${title}`) } finally { setSaving(false) } }
-  const remove = async (row) => { if (!await confirmDelete(row.nama || row.kode || title)) return; try { await api.delete(`${endpoint}/${row.id}`); load() } catch (error) { alert(error.response?.data?.message || `Gagal menghapus ${title}`) } }
+  const save = async (data) => { setSaving(true); try { if (current?.id) await api.put(`${endpoint}/${current.id}`, data); else await api.post(endpoint, data); await load(); await showSuccess('Berhasil', 'Data berhasil disimpan'); setCurrent(null); setShowForm(false) } catch (error) { const validationErrors = error.response?.data?.errors; await showError('Gagal', validationErrors ? Object.values(validationErrors).flat().join('\n') : error.response?.data?.message || `Gagal menyimpan ${title}`) } finally { setSaving(false) } }
+  const remove = async (row) => { if (!await confirmDelete(row.nama || row.kode || title)) return; try { await api.delete(`${endpoint}/${row.id}`); load() } catch (error) {       toast('error', error.response?.data?.message || `Gagal menghapus ${title}`) } }
   return <div>{!showForm && <section className="rounded-2xl border border-[#1E1E2E] bg-[#14141E] shadow-sm"><div className="p-6"><div className="mb-6 flex items-center justify-between"><div className="flex items-center gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-indigo-400">Master data</p><h1 className="mt-1 text-2xl font-bold text-slate-100">{title}</h1></div></div>{can(user, `${module}.create`) && <button className={`${buttonClass} bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 focus:ring-indigo-200`} onClick={openCreate}>+ Tambah</button>}</div><div className="mb-6 grid grid-cols-12 gap-3"><div className="relative col-span-4"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" /><input className="w-full rounded-xl border border-[#262636] bg-[#1A1A26] py-2.5 pl-10 pr-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" placeholder={`Cari ${title}...`} value={search} onChange={(e) => setSearch(e.target.value)} /></div>{filters.length > 0 && <div className="col-span-4"><select className={inputClass} value={filter} onChange={(e) => setFilter(e.target.value)}><option value="">Semua filter</option>{filters.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}</select></div>}</div>{loading ? <div className="flex items-center justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div> : <DataTable fields={fields} rows={rows} onEdit={openEdit} onDelete={remove} canEdit={can(user, `${module}.update`)} canDelete={can(user, `${module}.delete`)} />}</div></section>}{showForm && <FormModal title={modalTitle} fields={fields} current={current} onSubmit={save} onCancel={() => setShowForm(false)} saving={saving} />}</div>
 }
 
