@@ -71,18 +71,18 @@ function ProtectedRoute() {
 function AccessRoute({ children }) {
   const { user } = useAuth()
   const location = useLocation()
-  const { phase, pretestDone, lulus, asesmenStatus, asesmenLulus, schedule, allAsesmenDone } = useSchedule()
+  const { phase, pretestDone, lulus, asesmenStatus, asesmenLulus, schedule, allAsesmenDone, wawancaraPending, menungguDinilai } = useSchedule()
 
   if (isWalidataRole(user) && !phase) {
     return <div className="flex items-center justify-center py-32"><div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>
   }
 
   if (!canAccessPath(user, location.pathname)) {
-    return <Navigate to={firstAllowedPath(user, phase, pretestDone)} replace />
+    return <Navigate to={firstAllowedPath(user, phase, pretestDone, asesmenLulus, wawancaraPending, menungguDinilai)} replace />
   }
 
-  if (getMenuLock(location.pathname, phase, pretestDone, schedule, user, lulus, asesmenStatus, allAsesmenDone, asesmenLulus)?.locked) {
-    return <Navigate to={firstAllowedPath(user, phase, pretestDone)} replace />
+  if (getMenuLock(location.pathname, phase, pretestDone, schedule, user, lulus, asesmenStatus, allAsesmenDone, asesmenLulus, wawancaraPending, menungguDinilai)?.locked) {
+    return <Navigate to={firstAllowedPath(user, phase, pretestDone, asesmenLulus, wawancaraPending, menungguDinilai)} replace />
   }
 
   return children

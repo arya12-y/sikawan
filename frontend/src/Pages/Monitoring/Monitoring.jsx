@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { can } from '../../utils/can'
 import api from '../../api/axios'
-import { showConfirm, showError, showSuccess } from '../../utils/alert'
+import { showConfirm } from '../../utils/alert'
+import { toast } from '../../utils/toast'
 
 const normalizeRows = (payload) => {
   const rows = payload?.data ?? payload
@@ -51,8 +52,9 @@ function Monitoring() {
     try {
       await api.post(`/peserta-asesmens/${row.id}/reset`)
       load()
+      toast('success', 'Berhasil mereset ujian')
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal reset')
+      toast('error', e.response?.data?.message || 'Gagal reset')
     }
   }
 
@@ -68,9 +70,9 @@ function Monitoring() {
     try {
       await api.delete(`/monitoring/${row.id}`)
       load()
-      await showSuccess('Dihapus', 'Data monitoring berhasil dihapus.')
+      toast('success', 'Berhasil menghapus Data monitoring')
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal hapus')
+      toast('error', e.response?.data?.message || 'Gagal hapus')
     }
   }
 
@@ -86,8 +88,9 @@ function Monitoring() {
     try {
       await api.post('/pretest/reset', { user_id: row.user_id })
       loadPretest()
+      toast('success', 'Berhasil mereset pretest')
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal reset pretest')
+      toast('error', e.response?.data?.message || 'Gagal reset pretest')
     }
   }
 
@@ -102,10 +105,10 @@ function Monitoring() {
     if (!confirmed) return
     try {
       const res = await api.post('/pretest/cleanup')
-      await showSuccess('Berhasil', res.data?.message || `${res.data?.deleted || 0} data dibersihkan`)
+      toast('success', res.data?.message || `Berhasil menghapus ${res.data?.deleted || 0} data`)
       loadPretest()
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal bersihkan data')
+      toast('error', e.response?.data?.message || 'Gagal bersihkan data')
     }
   }
 
@@ -121,9 +124,9 @@ function Monitoring() {
     try {
       await api.post('/pretest/activate', { user_id: userId })
       setPendingActivation(prev => prev.filter(p => p.user_id !== userId))
-      await showSuccess('Aktif', `Pretest untuk ${userName} sudah aktif.`)
+      toast('success', `Berhasil mengaktifkan pretest untuk ${userName}`)
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal aktivasi')
+      toast('error', e.response?.data?.message || 'Gagal aktivasi')
     }
   }
 
@@ -139,9 +142,9 @@ function Monitoring() {
     try {
       const res = await api.post('/pretest/activate-all')
       setPendingActivation([])
-      await showSuccess('Berhasil', res.data?.message || 'Semua walidata diaktifkan')
+      toast('success', res.data?.message || 'Berhasil mengaktifkan semua walidata')
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal aktivasi massal')
+      toast('error', e.response?.data?.message || 'Gagal aktivasi massal')
     }
   }
 
@@ -149,7 +152,7 @@ function Monitoring() {
     total: rows.length,
     selesai: rows.filter((r) => r.status === 'selesai').length,
     lulus: rows.filter((r) => r.lulus).length,
-    sedang: rows.filter((r) => r.status !== 'selesai').length,
+    sedang: rows.filter((r) => r.status === 'sedang_mengerjakan').length,
   }
 
   return (
@@ -238,20 +241,21 @@ function Monitoring() {
                   {rows.map((row) => {
                     const completed = row.status === 'selesai'
                     const belumMulai = row.status === 'belum_mulai'
+                    const waiting = ['menunggu_dinilai', 'dinilai', 'wawancara'].includes(row.status)
                     const passed = row.lulus
-                    const progress = completed ? 100 : (belumMulai ? 0 : 50)
-                    const color = completed ? (passed ? 'from-emerald-500 to-emerald-400' : 'from-rose-500 to-rose-400') : (belumMulai ? 'from-slate-500 to-slate-400' : 'from-indigo-500 to-violet-500')
+                    const progress = completed ? 100 : (belumMulai ? 0 : (waiting ? 100 : 50))
+                    const color = completed ? (passed ? 'from-emerald-500 to-emerald-400' : 'from-rose-500 to-rose-400') : (belumMulai ? 'from-slate-500 to-slate-400' : (waiting ? 'from-amber-500 to-amber-400' : 'from-indigo-500 to-violet-500'))
                     return (
                       <tr className="transition hover:bg-white/[0.02]" key={row.id}>
                         <td className="px-5 py-4"><p className="font-medium text-slate-100">{row.user?.name ?? '-'}</p><p className="mt-0.5 text-xs text-slate-500">{row.user?.opd_name ?? 'OPD'}</p></td>
                         <td className="px-5 py-4 text-slate-400">{row.asesmen?.judul ?? '-'}</td>
                         <td className="px-5 py-4 min-w-[200px]">
                           <div className="flex justify-between mb-1.5">
-                            <span className="text-xs font-medium text-slate-300">{completed ? `Nilai: ${row.nilai}` : (belumMulai ? 'Belum mulai' : 'Sedang mengerjakan')}</span>
+                            <span className="text-xs font-medium text-slate-300">{completed ? `Nilai: ${row.nilai}` : (belumMulai ? 'Belum mulai' : (waiting ? (row.status === 'dinilai' ? 'Dinilai' : row.status === 'wawancara' ? 'Wawancara' : 'Menunggu dinilai') : 'Sedang mengerjakan'))}</span>
                             <span className="text-xs text-slate-500">{completed ? '100%' : (belumMulai ? '0%' : '50%')}</span>
                           </div>
                           <div className="h-2 rounded-full bg-[#1E1E2E] overflow-hidden">
-                            <div className={`h-full rounded-full bg-gradient-to-r ${color} transition-all ${(!completed && !belumMulai) ? 'animate-pulse' : ''}`} style={{ width: `${progress}%` }} />
+                            <div className={`h-full rounded-full bg-gradient-to-r ${color} transition-all ${(!completed && !belumMulai && !waiting) ? 'animate-pulse' : ''}`} style={{ width: `${progress}%` }} />
                           </div>
                         </td>
                         <td className="px-5 py-4">
@@ -260,6 +264,8 @@ function Monitoring() {
                               : <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-400"><XCircle className="h-3 w-3" /> Tidak Lulus</span>
                           ) : belumMulai ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/10 px-2.5 py-1 text-xs font-medium text-slate-400">Belum mulai</span>
+                          ) : waiting ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-400">{row.status === 'dinilai' ? 'Dinilai' : row.status === 'wawancara' ? 'Wawancara' : 'Menunggu dinilai'}</span>
                           ) : (
                             <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-400"><Play className="h-3 w-3" /> Mengerjakan</span>
                           )}

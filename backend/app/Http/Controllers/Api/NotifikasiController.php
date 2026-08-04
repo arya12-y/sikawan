@@ -62,6 +62,15 @@ class NotifikasiController extends Controller
         return response()->json(['message' => 'Marked']);
     }
 
+    public function destroy(Request $request, $id)
+    {
+        $notifikasi = Notifikasi::findOrFail($id);
+        abort_unless($notifikasi->user_id === $request->user()->id || $this->isAdmin($request), 403);
+        $notifikasi->delete();
+
+        return response()->json(['message' => 'Notifikasi dihapus']);
+    }
+
     private function isAdmin(Request $request): bool
     {
         return $request->user()?->hasAnyRole(['Super Admin', 'Admin Diskominfo']) || false;

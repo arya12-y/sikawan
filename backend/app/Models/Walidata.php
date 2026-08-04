@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Casts;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['user_id', 'opd_id', 'bidang_id', 'jabatan_id', 'level_id', 'nip', 'nilai_kompetensi', 'is_active'])]
-#[Casts(['nilai_kompetensi' => 'decimal:2', 'is_active' => 'boolean'])]
+#[Fillable(['user_id', 'opd_id', 'bidang_id', 'jabatan_id', 'level_id', 'nip', 'nilai_kompetensi', 'is_active', 'pretest_activated', 'last_reset_request_at'])]
 class Walidata extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected $casts = ['nilai_kompetensi' => 'decimal:2', 'is_active' => 'boolean', 'pretest_activated' => 'boolean', 'last_reset_request_at' => 'datetime'];
 
     public function user(): BelongsTo
     {

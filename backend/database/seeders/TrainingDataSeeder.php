@@ -26,7 +26,7 @@ class TrainingDataSeeder extends Seeder
             $kompetensi = $kompetensis->first();
             $level = Level::first();
             $kategori = Kategori::first();
-            $creator = User::role('Super Admin')->first() ?? User::first();
+            $creator = User::whereHas('roles', fn($q) => $q->where('name', 'Super Admin')->where('guard_name', 'sanctum'))->first() ?? User::first();
 
             $sampleMateris = [
                 ['judul' => 'Pengantar Satu Data Indonesia', 'jenis' => 'video', 'deskripsi' => 'Video pengantar konsep SDI', 'url_video' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'durasi' => 10],

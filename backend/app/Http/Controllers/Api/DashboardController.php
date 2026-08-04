@@ -28,7 +28,7 @@ class DashboardController extends Controller
                 'walidata' => $totalWalidata,
                 'sudah_sertifikasi' => $sertifiedUsers,
                 'belum_sertifikasi' => max($totalWalidata - $sertifiedUsers, 0),
-                'nilai_rata_rata' => (int) round((float) PesertaAsesmen::whereIn('status', ['selesai', 'dinilai'])->avg('nilai')),
+                'nilai_rata_rata' => (int) round((float) PesertaAsesmen::whereIn('status', ['selesai', 'dinilai', 'menunggu_dinilai', 'wawancara'])->avg('nilai')),
             ],
             'level_distribution' => DB::table('walidatas')
                 ->whereNull('walidatas.deleted_at')
@@ -82,11 +82,14 @@ class DashboardController extends Controller
                     'total_sertifikat' => \App\Models\Sertifikat::where('user_id', $user->id)->count(),
                 ];
             },
-            'training_progress' => [
-                'value' => (int) round((float) MateriProgress::avg('progress')),
-                'completed' => MateriProgress::where('is_completed', true)->count(),
-                'total' => MateriProgress::count(),
-            ],
+            'training_progress' => (function () {
+                $walidataIds = \App\Models\Walidata::pluck('user_id');
+                return [
+                    'value' => (int) round((float) MateriProgress::whereIn('user_id', $walidataIds)->avg('progress')),
+                    'completed' => MateriProgress::whereIn('user_id', $walidataIds)->where('is_completed', true)->count(),
+                    'total' => MateriProgress::whereIn('user_id', $walidataIds)->count(),
+                ];
+            })(),
             'kompetensi_map' => Opd::query()
                 ->withCount('walidatas')
                 ->withAvg('walidatas', 'nilai_kompetensi')

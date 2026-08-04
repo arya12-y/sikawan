@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { ArrowLeft, ArrowRight, CheckCircle, HelpCircle, Trophy, XCircle, RefreshCw } from 'lucide-react'
 import api from '../../api/axios'
+import { toast } from '../../utils/toast'
 
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
 
@@ -36,9 +37,7 @@ function MateriQuiz() {
       }
       setStep('setup')
     } catch (e) {
-      const Swal = (await import('sweetalert2')).default
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal memulai kuis', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      toast('error', e.response?.data?.message || 'Gagal memulai kuis')
     } finally {
       setLoading(false)
     }
@@ -63,9 +62,7 @@ function MateriQuiz() {
       setScore({ correct: 0, total: 0 })
       setStep('quiz')
     } catch (e) {
-      const Swal = (await import('sweetalert2')).default
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({ icon: 'error', title: 'Gagal', text: e.response?.data?.message || 'Gagal memulai kuis', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      toast('error', e.response?.data?.message || 'Gagal memulai kuis')
     } finally {
       setLoading(false)
     }
@@ -78,10 +75,11 @@ function MateriQuiz() {
   const checkAnswer = useCallback(async (soalId) => {
     if (checked[soalId]) return
     const jawaban = userAnswers[soalId] ?? ''
-    if (!jawaban.trim() && soals.find(s => s.id === soalId)?.jenis === 'essay') {
+    if (!jawaban.trim()) {
       const Swal = (await import('sweetalert2')).default
       const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({ icon: 'warning', title: 'Jawaban kosong', text: 'Tulis jawaban Anda terlebih dahulu.', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
+      const isEssay = soals.find(s => s.id === soalId)?.jenis === 'essay'
+      Swal.fire({ icon: 'warning', title: 'Jawaban kosong', text: isEssay ? 'Tulis jawaban Anda terlebih dahulu.' : 'Pilih jawaban terlebih dahulu.', background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A', confirmButtonColor: '#6366f1' })
       return
     }
     try {

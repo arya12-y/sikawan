@@ -2,12 +2,16 @@ import { useCallback, useEffect, useState } from 'react'
 import { Shield, Plus, Check, Users, Pencil, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { confirmDelete } from '../../utils/confirm'
-import { showWarning, showSuccess, showError } from '../../utils/alert'
+import { showWarning } from '../../utils/alert'
+import { toast } from '../../utils/toast'
+import { can } from '../../utils/can'
+import { useAuth } from '../../hooks/useAuth'
 
 const actionLabels = { view: 'Lihat', create: 'Tambah', update: 'Ubah', delete: 'Hapus', import: 'Import', export: 'Export', publish: 'Publikasi', start: 'Mulai', grade: 'Nilai', review: 'Review', download: 'Download', print: 'Cetak', 'export-pdf': 'Export PDF', 'export-excel': 'Export Excel' }
 const moduleLabels = { dashboard: 'Dashboard', opd: 'OPD', bidang: 'Bidang', jabatan: 'Jabatan', walidata: 'Walidata', penguji: 'Penguji', kompetensi: 'Kompetensi', level: 'Level', badge: 'Badge', materi: 'Materi', kategori: 'Kategori', pengguna: 'Pengguna', 'bank-soal': 'Bank Soal', quiz: 'Quiz', asesmen: 'Asesmen', penilaian: 'Penilaian', sertifikat: 'Sertifikat', monitoring: 'Monitoring', laporan: 'Laporan', 'audit-log': 'Audit Log', notifikasi: 'Notifikasi', profile: 'Profile', password: 'Password', session: 'Session' }
 
 function Roles() {
+  const { user } = useAuth()
   const [roles, setRoles] = useState([])
   const [permissions, setPermissions] = useState({})
   const [loading, setLoading] = useState(true)
@@ -19,9 +23,10 @@ function Roles() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    if (!can(user, 'pengguna.view')) { setLoading(false); return }
     try { const [r, p] = await Promise.all([api.get('/roles'), api.get('/permissions')]); setRoles(r.data); setPermissions(p.data) }
-    catch (e) { alert(e.response?.data?.message || 'Gagal memuat') } finally { setLoading(false) }
-  }, [])
+    catch (e) { toast('error', e.response?.data?.message || 'Gagal memuat') } finally { setLoading(false) }
+  }, [user])
   useEffect(() => { queueMicrotask(() => load()) }, [load])
 
   const openCreate = () => { setEditing(null); setFormName(''); setSelectedPerms([]); setShowForm(true) }
@@ -37,12 +42,12 @@ function Roles() {
       if (editing) await api.put(`/roles/${editing.id}`, { name: formName.trim(), permissions: selectedPerms })
       else await api.post('/roles', { name: formName.trim(), permissions: selectedPerms })
       await load()
-      await showSuccess('Berhasil', 'Role berhasil disimpan')
+      toast('success', 'Berhasil menyimpan Role')
       setShowForm(false)
-    } catch (e) { await showError('Gagal', e.response?.data?.message || 'Gagal menyimpan role') } finally { setSaving(false) }
+    } catch (e) { toast('error', e.response?.data?.message || 'Gagal menyimpan role') } finally { setSaving(false) }
   }
 
-  const remove = async (role) => { if (await confirmDelete(role.name)) { try { await api.delete(`/roles/${role.id}`); load() } catch (e) { alert(e.response?.data?.message || 'Gagal menghapus') } } }
+  const remove = async (role) => { if (await confirmDelete(role.name)) { try { await api.delete(`/roles/${role.id}`); load() } catch (e) { toast('error', e.response?.data?.message || 'Gagal menghapus') } } }
 
   const permCount = (perms) => {
     const groups = {}

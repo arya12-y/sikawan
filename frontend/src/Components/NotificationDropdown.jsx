@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, ArrowRight, CheckCircle } from 'lucide-react'
+import { Bell, ArrowRight, CheckCircle, Trash2 } from 'lucide-react'
 import api from '../api/axios'
 
 function NotificationDropdown() {
@@ -8,7 +8,7 @@ function NotificationDropdown() {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/notifikasis?per_page=5')
+      const res = await api.get('/notifikasis?per_page=50')
       const data = res.data?.data ?? res.data
       setRows(Array.isArray(data) ? data : [])
     } catch {
@@ -36,6 +36,16 @@ function NotificationDropdown() {
     try {
       await api.post('/notifikasis/mark-all-read')
       load()
+    } catch {
+      // ignore
+    }
+  }
+
+  const removeNotif = async (id, e) => {
+    e.stopPropagation()
+    try {
+      await api.delete(`/notifikasis/${id}`)
+      setRows(prev => prev.filter(r => r.id !== id))
     } catch {
       // ignore
     }
@@ -78,11 +88,16 @@ function NotificationDropdown() {
                     {row.link ? (
                       <a href={row.link} className="text-xs font-medium text-indigo-400 hover:text-indigo-700 inline-flex items-center">Lihat Detail <ArrowRight className="h-3 w-3 ml-1" /></a>
                     ) : <div></div>}
-                    {!row.is_read && (
-                      <button className="flex h-6 w-6 items-center justify-center rounded-full text-indigo-400 hover:bg-indigo-100 transition" onClick={(e) => markRead(row.id, e)} title="Tandai sudah dibaca">
-                        <CheckCircle className="h-4 w-4" />
+                    <div className="flex items-center gap-1">
+                      {!row.is_read && (
+                        <button className="flex h-6 w-6 items-center justify-center rounded-full text-indigo-400 hover:bg-indigo-100 transition" onClick={(e) => markRead(row.id, e)} title="Tandai sudah dibaca">
+                          <CheckCircle className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition" onClick={(e) => removeNotif(row.id, e)} title="Hapus">
+                        <Trash2 className="h-4 w-4" />
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               ))

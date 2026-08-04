@@ -4,7 +4,7 @@ import api from '../../api/axios'
 import { useAuth } from '../../hooks/useAuth'
 import { can } from '../../utils/can'
 import { confirmDelete } from '../../utils/confirm'
-import { showError, showSuccess } from '../../utils/alert'
+import { toast } from '../../utils/toast'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
@@ -117,10 +117,10 @@ function ExamSchedules() {
       if (current?.id) await api.put(`/exam-schedules/${current.id}`, payload)
       else await api.post('/exam-schedules', payload)
       await load()
-      await showSuccess('Berhasil', 'Jadwal berhasil disimpan')
+      toast('success', 'Berhasil menyimpan Jadwal')
       setShowModal(false)
     } catch (err) {
-      showError('Gagal', err.response?.data?.message || 'Gagal menyimpan jadwal', 'Tutup')
+      toast('error', err.response?.data?.message || 'Gagal menyimpan jadwal')
     } finally {
       setSaving(false)
     }
@@ -132,7 +132,7 @@ function ExamSchedules() {
         await api.delete(`/exam-schedules/${row.id}`)
         load()
       } catch (err) {
-        showError('Gagal', err.response?.data?.message || 'Gagal menghapus jadwal', 'Tutup')
+        toast('error', err.response?.data?.message || 'Gagal menghapus jadwal')
       }
     }
   }

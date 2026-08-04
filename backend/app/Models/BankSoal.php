@@ -13,10 +13,11 @@ class BankSoal extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['kompetensi_id', 'level_id', 'jenis', 'pertanyaan', 'pilihan', 'jawaban_benar', 'pembahasan', 'bobot', 'is_active', 'created_by'];
+    protected $fillable = ['kompetensi_id', 'level_id', 'jenis', 'tipe', 'pertanyaan', 'pilihan', 'jawaban_benar', 'pembahasan', 'bobot', 'is_active', 'created_by'];
 
     protected $casts = [
         'pilihan' => 'array',
+        'tipe' => 'array',
         'bobot' => 'decimal:2',
         'is_active' => 'boolean',
     ];

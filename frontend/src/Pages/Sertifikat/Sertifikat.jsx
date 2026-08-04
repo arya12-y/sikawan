@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import api from '../../api/axios'
 import { can } from '../../utils/can'
 import { useAuth } from '../../hooks/useAuth'
+import { toast } from '../../utils/toast'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
 
@@ -17,7 +18,7 @@ function Sertifikat() {
       const res = await api.get('/sertifikats')
       setRows(normalize(res.data))
     } catch (e) {
-      alert(e.response?.data?.message || 'Gagal memuat sertifikat')
+      toast('error', e.response?.data?.message || 'Gagal memuat sertifikat')
     } finally { setLoading(false) }
   }, [])
 
@@ -30,7 +31,7 @@ function Sertifikat() {
       const link = document.createElement('a')
       link.href = url; link.download = `${row.nomor_sertifikat}.pdf`
       link.click(); URL.revokeObjectURL(url)
-    } catch (e) { alert(e.response?.data?.message || 'Gagal download sertifikat') }
+    } catch (e) { toast('error', e.response?.data?.message || 'Gagal download sertifikat') }
   }
 
   const totalSertifikat = rows.length

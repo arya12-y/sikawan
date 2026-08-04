@@ -25,7 +25,35 @@ class BankSoalController extends CrudController
 
     protected function validationRules(?Model $model = null): array
     {
-        return ['kompetensi_id' => ['required', 'exists:kompetensis,id'], 'level_id' => ['nullable', 'exists:levels,id'], 'jenis' => ['required', Rule::in(['pilihan_ganda', 'essay'])], 'pertanyaan' => ['required', 'string'], 'pilihan' => ['nullable', 'array'], 'jawaban_benar' => ['nullable', 'string'], 'pembahasan' => ['nullable', 'string'], 'bobot' => ['required', 'numeric', 'min:0'], 'is_active' => ['boolean']];
+        return ['kompetensi_id' => ['required', 'exists:kompetensis,id'], 'level_id' => ['nullable', 'exists:levels,id'], 'jenis' => ['required', Rule::in(['pilihan_ganda', 'essay'])], 'tipe' => ['required', 'array'], 'tipe.*' => [Rule::in(['quiz', 'pretest', 'asesmen'])], 'pertanyaan' => ['required', 'string'], 'pilihan' => ['nullable', 'array'], 'jawaban_benar' => ['nullable', 'string'], 'pembahasan' => ['nullable', 'string'], 'bobot' => ['required', 'numeric', 'min:0'], 'is_active' => ['boolean']];
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->modelClass()::query()->with($this->with);
+
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search) {
+                foreach ($this->searchable as $field) {
+                    $q->orWhere($field, 'like', "%{$search}%");
+                }
+            });
+        }
+
+        foreach ($request->only($this->filterable) as $field => $value) {
+            if ($value !== null && $value !== '') {
+                $query->where($field, $value);
+            }
+        }
+
+        if ($tipe = $request->query('tipe')) {
+            $query->whereJsonContains('tipe', $tipe);
+        }
+
+        $sort = in_array($request->query('sort'), $this->sortable, true) ? $request->query('sort') : 'id';
+        $direction = $request->query('direction', 'desc') === 'asc' ? 'asc' : 'desc';
+
+        return response()->json($query->orderBy($sort, $direction)->paginate((int) $request->query('per_page', 15)));
     }
 
     public function store(Request $request)
@@ -54,9 +82,10 @@ class BankSoalController extends CrudController
     {
         $data = BankSoal::query()->get();
         if ($request->query('format') === 'csv') {
-            $csv = implode(',', ['id', 'kompetensi_id', 'level_id', 'jenis', 'pertanyaan', 'jawaban_benar', 'bobot'])."\n";
+            $csv = implode(',', ['id', 'kompetensi_id', 'level_id', 'jenis', 'tipe', 'pertanyaan', 'jawaban_benar', 'bobot'])."\n";
             foreach ($data as $row) {
-                $csv .= implode(',', array_map(fn ($v) => '"'.str_replace('"', '""', (string) $v).'"', [$row->id, $row->kompetensi_id, $row->level_id, $row->jenis, $row->pertanyaan, $row->jawaban_benar, $row->bobot]))."\n";
+                $tipe = is_array($row->tipe) ? implode('|', $row->tipe) : (string) $row->tipe;
+                $csv .= implode(',', array_map(fn ($v) => '"'.str_replace('"', '""', (string) $v).'"', [$row->id, $row->kompetensi_id, $row->level_id, $row->jenis, $tipe, $row->pertanyaan, $row->jawaban_benar, $row->bobot]))."\n";
             }
 
             return Response::make($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename=bank-soal.csv']);

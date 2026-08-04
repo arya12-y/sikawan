@@ -18,8 +18,14 @@ class PretestController extends Controller
         $schedule = \App\Models\ExamSchedule::where('is_active', true)->first();
         abort_unless($schedule && now()->between($schedule->pretest_start, $schedule->pretest_end), 403, 'Pretest belum dibuka');
 
+        if (!$user->hasRole('Super Admin')) {
+            abort_unless($user->walidata?->pretest_activated, 403, 'Pretest belum diaktifkan oleh admin. Silakan hubungi admin.');
+        }
+
         $existing = PretestResult::where('user_id', $user->id)->exists();
-        abort_if($existing, 422, 'Anda sudah mengikuti pretest');
+        if ($existing && !$user->hasRole('Super Admin')) {
+            abort(422, 'Anda sudah mengikuti pretest');
+        }
 
         $kompetensiIds = $schedule->kompetensi_ids;
         $jumlah = $schedule->pretest_jumlah_per_kompetensi ?? 5;
@@ -29,6 +35,7 @@ class PretestController extends Controller
             $allSoals = BankSoal::whereIn('kompetensi_id', $kompetensiIds)
                 ->where('is_active', true)
                 ->where('jenis', 'pilihan_ganda')
+                ->whereJsonContains('tipe', 'pretest')
                 ->get(['id', 'kompetensi_id', 'pertanyaan', 'pilihan', 'jenis', 'bobot'])
                 ->groupBy('kompetensi_id');
 
@@ -40,6 +47,7 @@ class PretestController extends Controller
         } else {
             $soals = BankSoal::where('is_active', true)
                 ->where('jenis', 'pilihan_ganda')
+                ->whereJsonContains('tipe', 'pretest')
                 ->inRandomOrder()
                 ->limit($jumlah * 3)
                 ->get(['id', 'kompetensi_id', 'pertanyaan', 'pilihan', 'jenis', 'bobot'])
@@ -49,12 +57,17 @@ class PretestController extends Controller
         shuffle($soals);
 
         $sesiId = Str::uuid()->toString();
+        $durasi = $schedule->pretest_durasi ?? 30;
+        $remainingMinutes = (int) ceil(now()->diffInMinutes($schedule->pretest_end, false));
+        if ($remainingMinutes > 0) {
+            $durasi = min($durasi, $remainingMinutes);
+        }
 
         return response()->json([
             'sesi_id' => $sesiId,
             'soals' => $soals,
             'total' => count($soals),
-            'waktu' => count($soals) * 2, // 2 menit per soal
+            'durasi' => max($durasi, 1),
         ]);
     }
 
@@ -80,9 +93,7 @@ class PretestController extends Controller
             if (!$soal) continue;
 
             $jawabanUser = $item['jawaban'] ?? '';
-            $jawabanRef = $soal->jawaban_benar ?? '';
-
-            $benar = strtolower(trim($jawabanUser)) === strtolower(trim($jawabanRef));
+            $benar = $this->isJawabanBenar($soal, $jawabanUser);
             $nilaiSoal = $benar ? (float) ($soal->bobot ?? 1) : 0;
 
             $kid = $soal->kompetensi_id;
@@ -143,6 +154,21 @@ class PretestController extends Controller
                 'skor' => $r['total'] > 0 ? round(($r['skor'] / $r['total']) * 100, 2) : 0,
             ])->values(),
         ]);
+    }
+
+    private function isJawabanBenar(BankSoal $soal, string $jawaban): bool
+    {
+        $jawaban = trim($jawaban);
+        $kunci = trim((string) ($soal->jawaban_benar ?? ''));
+        if (strcasecmp($jawaban, $kunci) === 0) return true;
+
+        $pilihan = is_array($soal->pilihan) ? $soal->pilihan : (json_decode((string) $soal->pilihan, true) ?? []);
+        $huruf = ['A', 'B', 'C', 'D', 'E'];
+        $indeksKunci = array_search(strtoupper($kunci), $huruf, true);
+        $indeksJawab = array_search(strtoupper($jawaban), $huruf, true);
+
+        if ($indeksKunci !== false && isset($pilihan[$indeksKunci]) && strcasecmp($jawaban, trim((string) $pilihan[$indeksKunci])) === 0) return true;
+        return $indeksJawab !== false && isset($pilihan[$indeksJawab]) && strcasecmp($kunci, trim((string) $pilihan[$indeksJawab])) === 0;
     }
 
     public function result(Request $request)
@@ -221,6 +247,10 @@ class PretestController extends Controller
             'sesi_id' => $sesiId,
             'rata_rata' => $rataRata,
             'level_name' => $user->walidata?->level?->nama,
+            'kompetensi_scores' => $results->map(fn ($r) => [
+                'kompetensi' => $r->kompetensi?->nama ?? 'Kompetensi #'.$r->kompetensi_id,
+                'skor' => (float) $r->nilai,
+            ])->values(),
             'jawaban' => $jawabanDetail,
         ]);
     }
@@ -266,6 +296,52 @@ class PretestController extends Controller
         ]);
     }
 
+    public function activate(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['Super Admin', 'Admin Diskominfo'])) {
+            abort(403, 'Hanya admin yang dapat mengaktifkan pretest');
+        }
+
+        $validated = $request->validate(['user_id' => ['required', 'exists:users,id']]);
+        $target = \App\Models\User::findOrFail($validated['user_id']);
+
+        if ($walidata = $target->walidata) {
+            $walidata->update(['pretest_activated' => true]);
+        }
+
+        return response()->json(['message' => 'Pretest diaktifkan untuk ' . $target->name]);
+    }
+
+    public function activateAll(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['Super Admin', 'Admin Diskominfo'])) {
+            abort(403);
+        }
+
+        $count = \App\Models\Walidata::where('pretest_activated', false)->update(['pretest_activated' => true]);
+
+        return response()->json(['message' => "{$count} walidata berhasil diaktifkan"]);
+    }
+
+    public function deactivate(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['Super Admin', 'Admin Diskominfo'])) {
+            abort(403, 'Hanya admin yang dapat menonaktifkan pretest');
+        }
+
+        $validated = $request->validate(['user_id' => ['required', 'exists:users,id']]);
+        $target = \App\Models\User::findOrFail($validated['user_id']);
+
+        if ($walidata = $target->walidata) {
+            $walidata->update(['pretest_activated' => false]);
+        }
+
+        return response()->json(['message' => 'Pretest dinonaktifkan untuk ' . $target->name]);
+    }
+
     public function reset(Request $request)
     {
         $user = $request->user();
@@ -281,12 +357,32 @@ class PretestController extends Controller
         $targetUser = \App\Models\User::findOrFail($validated['user_id']);
 
         PretestResult::where('user_id', $targetUser->id)->delete();
+        \App\Models\MateriProgress::where('user_id', $targetUser->id)->delete();
 
         if ($walidata = $targetUser->walidata) {
-            $walidata->update(['level_id' => null]);
+            $walidata->update(['level_id' => null, 'pretest_activated' => false]);
         }
 
         return response()->json(['message' => 'Pretest berhasil direset']);
+    }
+
+    public function pending(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['Super Admin', 'Admin Diskominfo'])) {
+            abort(403);
+        }
+
+        $walidatas = \App\Models\Walidata::with('user', 'opd')
+            ->where('pretest_activated', false)
+            ->get()
+            ->map(fn ($w) => [
+                'user_id' => $w->user_id,
+                'user_name' => $w->user?->name ?? '-',
+                'opd' => $w->opd?->singkatan ?? $w->opd?->nama ?? '-',
+            ]);
+
+        return response()->json($walidatas);
     }
 
     public function cleanup(Request $request)

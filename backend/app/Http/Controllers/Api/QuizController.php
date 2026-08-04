@@ -17,7 +17,7 @@ class QuizController extends Controller
         $jumlah = (int) $request->query('jumlah', 10);
         $jumlah = max(1, min(50, $jumlah));
 
-        $query = BankSoal::where('is_active', true);
+        $query = BankSoal::where('is_active', true)->whereJsonContains('tipe', 'quiz');
 
         if ($level) {
             $levelIds = \App\Models\Level::where('urutan', '<=', $level->urutan)->pluck('id');
@@ -63,10 +63,11 @@ class QuizController extends Controller
         $jawabanRef = trim($soal->jawaban_benar ?? '');
 
         if ($soal->jenis === 'pilihan_ganda') {
-            $benar = strtolower($jawabanUser) === strtolower($jawabanRef);
+            $benar = $this->isJawabanQuizBenar($soal, $jawabanUser);
+            $jawabanBenar = $this->jawabanBenarText($soal);
             return response()->json([
                 'benar' => $benar,
-                'jawaban_benar' => $jawabanRef,
+                'jawaban_benar' => $jawabanBenar,
                 'pembahasan' => $soal->pembahasan,
                 'jenis' => 'pilihan_ganda',
             ]);
@@ -86,5 +87,29 @@ class QuizController extends Controller
             'jawaban_benar' => $jawabanRef,
             'pembahasan' => $soal->pembahasan,
         ]);
+    }
+
+    private function isJawabanQuizBenar(BankSoal $soal, string $jawaban): bool
+    {
+        $jawaban = trim($jawaban);
+        $kunci = trim((string) ($soal->jawaban_benar ?? ''));
+        if (strcasecmp($jawaban, $kunci) === 0) return true;
+
+        $pilihan = is_array($soal->pilihan) ? $soal->pilihan : (json_decode((string) $soal->pilihan, true) ?? []);
+        $huruf = ['A', 'B', 'C', 'D', 'E'];
+        $indeksKunci = array_search(strtoupper($kunci), $huruf, true);
+        $indeksJawab = array_search(strtoupper($jawaban), $huruf, true);
+
+        if ($indeksKunci !== false && isset($pilihan[$indeksKunci]) && strcasecmp($jawaban, trim((string) $pilihan[$indeksKunci])) === 0) return true;
+        return $indeksJawab !== false && isset($pilihan[$indeksJawab]) && strcasecmp($kunci, trim((string) $pilihan[$indeksJawab])) === 0;
+    }
+
+    private function jawabanBenarText(BankSoal $soal): string
+    {
+        $kunci = trim((string) ($soal->jawaban_benar ?? ''));
+        $pilihan = is_array($soal->pilihan) ? $soal->pilihan : (json_decode((string) $soal->pilihan, true) ?? []);
+        $index = array_search(strtoupper($kunci), ['A', 'B', 'C', 'D', 'E'], true);
+
+        return $index !== false && isset($pilihan[$index]) ? (string) $pilihan[$index] : $kunci;
     }
 }

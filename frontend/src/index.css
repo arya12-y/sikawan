@@ -11,7 +11,45 @@
   --color-sikawan-primary-glow: rgba(99, 102, 241, 0.25);
   --color-sikawan-accent: #06B6D4;
   --color-sikawan-accent-light: #22D3EE;
+  --color-fg-brand-strong: #c7d2fe;
+  --color-brand-softer: rgba(79, 70, 229, 0.18);
+  --color-brand-soft: rgba(99, 102, 241, 0.28);
+  --color-brand-medium: rgba(129, 140, 248, 0.4);
+  --color-fg-success-strong: #a7f3d0;
+  --color-success-soft: rgba(16, 185, 129, 0.16);
+  --color-success-medium: rgba(52, 211, 153, 0.32);
+  --color-fg-danger-strong: #fecdd3;
+  --color-danger-soft: rgba(244, 63, 94, 0.16);
+  --color-danger-medium: rgba(251, 113, 133, 0.32);
+  --color-fg-warning: #fde68a;
+  --color-warning-soft: rgba(245, 158, 11, 0.17);
+  --color-warning-medium: rgba(251, 191, 36, 0.34);
+  --color-heading: #f1f5f9;
+  --color-neutral-secondary-medium: rgba(71, 85, 105, 0.55);
+  --color-neutral-tertiary: #64748b;
+  --color-neutral-tertiary-medium: rgba(100, 116, 139, 0.5);
+  --radius-base: 0.75rem;
   --font-family-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+html:not(.dark) {
+  --color-fg-brand-strong: #3730a3;
+  --color-brand-softer: rgba(99, 102, 241, 0.14);
+  --color-brand-soft: rgba(99, 102, 241, 0.2);
+  --color-brand-medium: rgba(99, 102, 241, 0.28);
+  --color-fg-success-strong: #047857;
+  --color-success-soft: rgba(16, 185, 129, 0.18);
+  --color-success-medium: rgba(16, 185, 129, 0.2);
+  --color-fg-danger-strong: #be123c;
+  --color-danger-soft: rgba(244, 63, 94, 0.14);
+  --color-danger-medium: rgba(244, 63, 94, 0.2);
+  --color-fg-warning: #92400e;
+  --color-warning-soft: rgba(245, 158, 11, 0.18);
+  --color-warning-medium: rgba(245, 158, 11, 0.25);
+  --color-heading: #0f172a;
+  --color-neutral-secondary-medium: rgba(226, 232, 240, 1);
+  --color-neutral-tertiary: #64748b;
+  --color-neutral-tertiary-medium: rgba(203, 213, 225, 0.9);
 }
 
 /* Base */

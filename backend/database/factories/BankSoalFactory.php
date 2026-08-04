@@ -19,6 +19,7 @@ class BankSoalFactory extends Factory
             'kompetensi_id' => Kompetensi::factory(),
             'level_id' => Level::factory(),
             'jenis' => 'pilihan_ganda',
+            'tipe' => fake()->randomElement(['quiz', 'pretest', 'asesmen']),
             'pertanyaan' => fake()->randomElement([
                 'Apa tujuan utama validasi data sektoral?',
                 'Indikator apa yang digunakan untuk menilai kualitas data?',

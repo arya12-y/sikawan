@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { canAccessPath, getMenuLock, isWalidataRole } from '../utils/access'
+import { can } from '../utils/can'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { useSchedule } from '../hooks/useSchedule'
@@ -57,13 +58,13 @@ const navSections = [
   ]},
 ]
 
-function NavItem({ item, collapsed, onNavClick, location, user, schedule, phase, pretestDone, lulus, asesmenStatus, allAsesmenDone, asesmenLulus }) {
+function NavItem({ item, collapsed, onNavClick, location, user, schedule, phase, pretestDone, lulus, asesmenStatus, allAsesmenDone, asesmenLulus, wawancaraPending, menungguDinilai }) {
   const [open, setOpen] = useState(() => item.children?.some(c => location.pathname === c.path) ?? false)
   const visibleChildren = item.children?.filter(c => canAccessPath(user, c.path)) ?? []
   const hasChildren = visibleChildren.length > 0
   const isActive = item.path ? location.pathname === item.path : false
   const isChildActive = item.children?.some(c => location.pathname === c.path) ?? false
-  const lockInfo = item.path ? getMenuLock(item.path, phase, pretestDone, schedule, user, lulus, asesmenStatus, allAsesmenDone, asesmenLulus) : { locked: false, message: '' }
+  const lockInfo = item.path ? getMenuLock(item.path, phase, pretestDone, schedule, user, lulus, asesmenStatus, allAsesmenDone, asesmenLulus, wawancaraPending, menungguDinilai) : { locked: false, message: '' }
 
   const navClass = `flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150`
   const normalClass = isActive || isChildActive ? 'text-slate-100 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -109,7 +110,7 @@ function NavItem({ item, collapsed, onNavClick, location, user, schedule, phase,
               <div className="ml-8 mt-0.5 space-y-0.5 border-l border-[#1E1E2E] pl-2">
                 {visibleChildren.map((child) => {
                   const childActive = location.pathname === child.path
-                  const childLock = getMenuLock(child.path, phase, pretestDone, schedule, user, lulus, asesmenStatus, allAsesmenDone, asesmenLulus)
+                  const childLock = getMenuLock(child.path, phase, pretestDone, schedule, user, lulus, asesmenStatus, allAsesmenDone, asesmenLulus, wawancaraPending, menungguDinilai)
                   return (
                     <div key={child.path}>
                       {childLock.locked ? (
@@ -182,7 +183,7 @@ function NavItem({ item, collapsed, onNavClick, location, user, schedule, phase,
   )
 }
 
-function SidebarContent({ user, collapsed, onNavClick, phase, pretestDone, lulus, asesmenStatus, schedule, allAsesmenDone, asesmenLulus }) {
+function SidebarContent({ user, collapsed, onNavClick, phase, pretestDone, lulus, asesmenStatus, schedule, allAsesmenDone, asesmenLulus, wawancaraPending, menungguDinilai }) {
   const location = useLocation()
   return (
     <>
@@ -211,7 +212,7 @@ function SidebarContent({ user, collapsed, onNavClick, phase, pretestDone, lulus
           </div>
         ) : (
           navSections.map((section) => {
-            const visibleItems = section.items.filter((item) => canAccessPath(user, item.path))
+            const visibleItems = section.items.filter((item) => item.path === '/notifikasi' ? can(user, 'notifikasi.create') : canAccessPath(user, item.path))
             if (visibleItems.length === 0) return null
             return (
               <div key={section.title}>
@@ -224,7 +225,7 @@ function SidebarContent({ user, collapsed, onNavClick, phase, pretestDone, lulus
                 </AnimatePresence>
                 <div className="space-y-0.5">
                   {visibleItems.map((item) => (
-                    <NavItem key={item.label} item={item} collapsed={collapsed} onNavClick={onNavClick} location={location} user={user} schedule={schedule} phase={phase} pretestDone={pretestDone} lulus={lulus} asesmenStatus={asesmenStatus} allAsesmenDone={allAsesmenDone} asesmenLulus={asesmenLulus} />
+                    <NavItem key={item.label} item={item} collapsed={collapsed} onNavClick={onNavClick} location={location} user={user} schedule={schedule} phase={phase} pretestDone={pretestDone} lulus={lulus} asesmenStatus={asesmenStatus} allAsesmenDone={allAsesmenDone} asesmenLulus={asesmenLulus} wawancaraPending={wawancaraPending} menungguDinilai={menungguDinilai} />
                   ))}
                 </div>
               </div>
@@ -243,7 +244,7 @@ function AdminLayout() {
   const { theme, toggle: toggleTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const { phase, pretestDone, lulus, asesmenStatus, asesmenLulus, schedule, allAsesmenDone } = useSchedule()
+  const { phase, pretestDone, lulus, asesmenStatus, asesmenLulus, schedule, allAsesmenDone, wawancaraPending, menungguDinilai } = useSchedule()
 
   const flatTitles = { '/profile': 'Profile', '/users': 'Pengguna', '/roles': 'Role & Hak Akses' }
   const findTitle = () => {
@@ -270,7 +271,7 @@ function AdminLayout() {
         transition={{ duration: 0.25, ease: 'easeInOut' }}
         className="hidden lg:flex flex-col bg-[#0F0F17] border-r border-[#1E1E2E] overflow-hidden shrink-0 sidebar-surface"
       >
-        <SidebarContent user={user} collapsed={collapsed} onNavClick={() => {}} phase={phase} pretestDone={pretestDone} lulus={lulus} asesmenStatus={asesmenStatus} schedule={schedule} allAsesmenDone={allAsesmenDone} asesmenLulus={asesmenLulus} />
+        <SidebarContent user={user} collapsed={collapsed} onNavClick={() => {}} phase={phase} pretestDone={pretestDone} lulus={lulus} asesmenStatus={asesmenStatus} schedule={schedule} allAsesmenDone={allAsesmenDone} asesmenLulus={asesmenLulus} wawancaraPending={wawancaraPending} menungguDinilai={menungguDinilai} />
       </motion.aside>
       <AnimatePresence>
         {mobileOpen && (
@@ -284,7 +285,7 @@ function AdminLayout() {
               <span className="text-slate-100 font-bold">SIKAWAN</span>
               <button onClick={() => setMobileOpen(false)} className="text-slate-400 hover:text-slate-200"><X className="w-5 h-5" /></button>
             </div>
-            <SidebarContent user={user} collapsed={false} onNavClick={() => setMobileOpen(false)} phase={phase} pretestDone={pretestDone} lulus={lulus} asesmenStatus={asesmenStatus} schedule={schedule} allAsesmenDone={allAsesmenDone} asesmenLulus={asesmenLulus} />
+            <SidebarContent user={user} collapsed={false} onNavClick={() => setMobileOpen(false)} phase={phase} pretestDone={pretestDone} lulus={lulus} asesmenStatus={asesmenStatus} schedule={schedule} allAsesmenDone={allAsesmenDone} asesmenLulus={asesmenLulus} wawancaraPending={wawancaraPending} menungguDinilai={menungguDinilai} />
           </motion.aside>
         )}
       </AnimatePresence>

@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form'
 import { AlertCircle as AlertCircleIcon, ClipboardCheck, Clock, Award, BookOpen, Plus, X, Pencil, Trash2, XCircle } from 'lucide-react'
 import api from '../../api/axios'
 import { confirmDelete } from '../../utils/confirm'
-import { showWarning, showSuccessToast, showError, showConfirm, showSuccess } from '../../utils/alert'
+import { showWarning, showConfirm } from '../../utils/alert'
+import { toast } from '../../utils/toast'
 import { useAuth } from '../../hooks/useAuth'
 import { useSchedule } from '../../hooks/useSchedule'
 import { can } from '../../utils/can'
@@ -35,11 +36,21 @@ function Asesmen() {
   const [kompetensiScores, setKompetensiScores] = useState([])
   const [selectedKompetensi, setSelectedKompetensi] = useState([])
   const [submitted, setSubmitted] = useState(false)
+  const [resetRequest, setResetRequest] = useState(null)
+  const [resetLoading, setResetLoading] = useState(false)
   const [kompetensiMap, setKompetensiMap] = useState({})
   const { user } = useAuth()
   const scheduleData = useSchedule()
   const allAsesmenDone = scheduleData.allAsesmenDone
+  const menungguDinilai = scheduleData.menungguDinilai
+  const wawancaraPending = scheduleData.wawancaraPending
+  const wawancara = scheduleData.wawancara
   useEffect(() => { if (asesmenLulus !== null) setSubmitted(false) }, [asesmenLulus])
+  useEffect(() => {
+    if (scheduleData.resetRequested) {
+      setResetRequest({ message: 'Permintaan reset sudah terkirim ke admin', locked: true })
+    }
+  }, [scheduleData.resetRequested])
   useEffect(() => {
     const scores = scheduleData?.status?.nilai_kompetensi
     if (Array.isArray(scores)) setKompetensiScores(scores)
@@ -67,12 +78,19 @@ function Asesmen() {
   }, [scheduleData?.status?.nilai_kompetensi])
 
   const load = useCallback(async () => {
-    const [a, k, l] = await Promise.all([
-      api.get('/asesmens'), api.get('/kompetensis'), api.get('/levels'),
-    ])
-    setAsesmens(normalize(a.data)); setKompetensis(normalize(k.data)); setLevels(normalize(l.data))
-    setReady(true)
-  }, [])
+    try {
+      const promises = [api.get('/asesmens')]
+      if (can(user, 'asesmen.create')) {
+        promises.push(api.get('/kompetensis'), api.get('/levels'))
+      }
+      const [a, k, l] = await Promise.all(promises)
+      setAsesmens(normalize(a.data)); setKompetensis(normalize(k?.data ?? [])); setLevels(normalize(l?.data ?? []))
+    } catch (e) {
+      toast('error', e.response?.data?.message || 'Gagal memuat asesmen')
+    } finally {
+      setReady(true)
+    }
+  }, [user])
   useEffect(() => { queueMicrotask(() => load()) }, [load])
 
   const submitExam = async (auto = false) => {
@@ -82,10 +100,12 @@ function Asesmen() {
         !s.jenis || !String(answers[s.id] || '').trim()
       )
       if (belumDijawab.length > 0) {
-        await showWarning(
+        await showConfirm(
           'Soal Belum Dijawab',
           `Ada ${belumDijawab.length} soal yang masih kosong (${belumDijawab.filter(s => s.jenis === 'essay').length} essay, ${belumDijawab.filter(s => s.jenis !== 'essay').length} PG). Jawab terlebih dahulu.`,
-          'Oke'
+          'Oke',
+          'Cancel',
+          'warning'
         )
         return
       }
@@ -97,21 +117,14 @@ function Asesmen() {
       setAsesmenStatus('selesai')
       setAsesmenLulus(null)
       setAsesmenNilai(submitRes.data?.nilai ?? null)
-      setActiveTab('list')
       setSubmitted(true)
       load()
-      await showConfirm('Terkirim', 'Jawaban asesmen berhasil dikirim dan akan segera diperiksa.', 'OK', 'Cancel', 'success')
+      toast('success', 'Jawaban asesmen berhasil dikirim')
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal submit asesmen')
+      toast('error', e.response?.data?.message || 'Gagal submit asesmen')
     }
   }
-  submitRef.current = submitExam
-  useEffect(() => {
-    if (asesmenLulus === true) {
-      const t = setTimeout(() => navigate('/sertifikat'), 3000)
-      return () => clearTimeout(t)
-    }
-  }, [asesmenLulus, navigate])
+submitRef.current = submitExam
   useEffect(() => {
     if (!secondsLeft || !peserta || peserta.status === 'selesai') return
     const timer = setInterval(() => setSecondsLeft((value) => {
@@ -137,16 +150,10 @@ function Asesmen() {
       if (current?.id) await api.put(`/asesmens/${current.id}`, payload)
       else await api.post('/asesmens', payload)
       await load()
-      await showConfirm('Berhasil', 'Asesmen berhasil disimpan', 'OK', 'Cancel', 'success')
+      toast('success', 'Berhasil menyimpan Asesmen')
       setActiveTab('list')
     } catch (e) {
-      await showConfirm(
-        'Gagal',
-        e.response?.data?.message || 'Gagal menyimpan asesmen',
-        'Tutup',
-        'Cancel',
-        'error'
-      )
+      toast('error', e.response?.data?.message || 'Gagal menyimpan asesmen')
     } finally {
       setSaving(false)
     }
@@ -166,7 +173,7 @@ function Asesmen() {
       setActiveTab('exam')
     } catch (e) {
       const msg = e.response?.data?.message || 'Gagal memulai asesmen. Pastikan bank soal tersedia.'
-      await showWarning('Tidak dapat memulai', msg, 'Mengerti')
+      await showConfirm('Tidak dapat memulai', msg, 'Mengerti', 'Cancel', 'warning')
     } finally {
       setLoading(false)
     }
@@ -194,8 +201,9 @@ function Asesmen() {
     try {
       await api.post(`/peserta-asesmens/${row.pivot?.peserta_asesmen_id || row.id}/reset`)
       load()
+      toast('success', 'Berhasil mereset ujian')
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal reset ujian')
+      toast('error', e.response?.data?.message || 'Gagal reset ujian')
     }
   }
 
@@ -204,15 +212,37 @@ function Asesmen() {
   const isAdmin = !isWalidata
   const examLocked = isWalidata && phase && phase !== 'exam'
 
-  // Status: Menunggu penilaian essay oleh penguji
-  if (ready && isWalidata && (submitted || (asesmenStatus === 'selesai' && asesmenLulus === null))) {
+  if (!ready || (isWalidata && (scheduleData.loading || !scheduleData.status))) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
+      </div>
+    )
+  }
+
+const mintaReset = async () => {
+    setResetLoading(true)
+    try {
+      const res = await api.post('/asesmen/minta-reset')
+      setResetRequest({ message: res.data?.message || 'Permintaan reset sudah terkirim ke admin', locked: true })
+    } catch (e) {
+      const d = e.response?.data
+      setResetRequest({ message: d?.message || 'Gagal mengirim permintaan', locked: true })
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  // Status: Menunggu dinilai oleh penguji
+  const waiting = submitted || menungguDinilai || asesmenStatus === 'menunggu_dinilai' || asesmenStatus === 'wawancara' || (asesmenStatus === 'selesai' && asesmenLulus === null)
+  if (ready && isWalidata && waiting) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] border-b-amber-500/40 bg-[#14141E] p-8 text-center shadow-lg shadow-black/10">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30 mb-5">
             <Clock className="h-8 w-8 text-white" />
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400 mb-3">Menunggu Penilaian</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400 mb-3">Menunggu dinilai</span>
           <h2 className="mt-3 text-2xl font-bold text-slate-100">Asesmen Selesai</h2>
           <p className="mt-2 text-sm text-slate-400">Nilai sementara (PG): <strong className="text-slate-100">{asesmenNilai}</strong></p>
           <p className="mt-1 text-sm text-slate-500">Jawaban essay sedang dinilai oleh penguji. Hasil akan muncul setelah diverifikasi.</p>
@@ -290,7 +320,11 @@ function Asesmen() {
             }} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-violet-500">
               <BookOpen className="h-4 w-4" /> Pelajari Lagi
             </button>
+            <button onClick={mintaReset} disabled={resetLoading || resetRequest !== null} className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 px-5 py-2.5 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60">
+              {resetRequest ? <><span>⏳</span>Permintaan reset sudah terkirim</> : <><span>🔄</span>{resetLoading ? 'Mengirim...' : 'Minta Reset'}</>}
+            </button>
           </div>
+          {resetRequest && <p className="mt-3 text-xs text-emerald-400">{resetRequest.message}</p>}
         </div>
       </div>
     )

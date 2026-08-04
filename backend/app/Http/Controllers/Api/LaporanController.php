@@ -13,12 +13,14 @@ class LaporanController extends Controller
 {
     public function asesmen(Request $request)
     {
-        return response()->json(PesertaAsesmen::with('user', 'asesmen')->latest()->paginate((int) $request->query('per_page', 15)));
+        $walidataIds = \App\Models\Walidata::pluck('user_id');
+        return response()->json(PesertaAsesmen::whereIn('user_id', $walidataIds)->with('user', 'asesmen')->latest()->paginate((int) $request->query('per_page', 15)));
     }
 
     public function sertifikat(Request $request)
     {
-        return response()->json(Sertifikat::with('user', 'asesmen')->latest()->paginate((int) $request->query('per_page', 15)));
+        $walidataIds = \App\Models\Walidata::pluck('user_id');
+        return response()->json(Sertifikat::whereIn('user_id', $walidataIds)->with('user', 'asesmen')->latest()->paginate((int) $request->query('per_page', 15)));
     }
 
     public function exportPdf(Request $request)
@@ -45,19 +47,43 @@ class LaporanController extends Controller
     {
         try {
             $type = $request->query('type') === 'sertifikat' ? 'sertifikat' : 'asesmen';
-            $csv = "nama,asesmen_atau_nomor,nilai,status,tanggal\n";
+            $rows = $this->reportRows($type);
 
-            foreach ($this->reportRows($type) as $row) {
-                $csv .= implode(',', [
-                    '"'.str_replace('"', '""', $row['nama']).'"',
-                    '"'.str_replace('"', '""', $row['referensi']).'"',
-                    $row['nilai'],
-                    '"'.str_replace('"', '""', $row['status']).'"',
-                    $row['tanggal'],
-                ])."\n";
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle($type === 'sertifikat' ? 'Sertifikat' : 'Asesmen');
+
+            // Header
+            $headers = ['Nama', $type === 'sertifikat' ? 'Nomor Sertifikat' : 'Asesmen', 'Nilai', 'Status', 'Tanggal'];
+            foreach ($headers as $i => $h) {
+                $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1);
+                $sheet->setCellValue($col . '1', $h);
+                $sheet->getStyle($col . '1')->getFont()->setBold(true);
             }
 
-            return Response::make($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename=laporan-'.$type.'.csv']);
+            // Data
+            foreach ($rows as $ri => $row) {
+                $num = $ri + 2;
+                $sheet->setCellValue("A{$num}", $row['nama']);
+                $sheet->setCellValue("B{$num}", $row['referensi']);
+                $sheet->setCellValue("C{$num}", $row['nilai']);
+                $sheet->setCellValue("D{$num}", $row['status']);
+                $sheet->setCellValue("E{$num}", $row['tanggal']);
+            }
+
+            foreach (range('A', 'E') as $c) {
+                $sheet->getColumnDimension($c)->setAutoSize(true);
+            }
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            ob_start();
+            $writer->save('php://output');
+            $content = ob_get_clean();
+
+            return Response::make($content, 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename=laporan-'.$type.'.xlsx',
+            ]);
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Gagal export Excel: '.$e->getMessage()], 500);
         }
@@ -65,8 +91,9 @@ class LaporanController extends Controller
 
     private function reportRows(string $type): array
     {
+        $walidataIds = \App\Models\Walidata::pluck('user_id');
         if ($type === 'sertifikat') {
-            return Sertifikat::with('user', 'asesmen')->latest()->get()->map(fn (Sertifikat $item) => [
+            return Sertifikat::whereIn('user_id', $walidataIds)->with('user', 'asesmen')->latest()->get()->map(fn (Sertifikat $item) => [
                 'nama' => $item->user?->name ?? '-',
                 'referensi' => $item->nomor_sertifikat,
                 'nilai' => (int) $item->nilai_akhir,
@@ -75,7 +102,7 @@ class LaporanController extends Controller
             ])->all();
         }
 
-        return PesertaAsesmen::with('user', 'asesmen')->latest()->get()->map(fn (PesertaAsesmen $item) => [
+        return PesertaAsesmen::whereIn('user_id', $walidataIds)->with('user', 'asesmen')->latest()->get()->map(fn (PesertaAsesmen $item) => [
             'nama' => $item->user?->name ?? '-',
             'referensi' => $item->asesmen?->judul ?? '-',
             'nilai' => (int) ($item->nilai ?? 0),

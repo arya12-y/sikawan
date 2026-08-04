@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Casts;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,11 +11,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['judul', 'deskripsi', 'kompetensi_id', 'level_id', 'jumlah_soal', 'durasi', 'nilai_lulus', 'acak_soal', 'acak_jawaban', 'tanggal_mulai', 'tanggal_selesai', 'status', 'created_by'])]
-#[Casts(['jumlah_soal' => 'integer', 'durasi' => 'integer', 'nilai_lulus' => 'decimal:2', 'acak_soal' => 'boolean', 'acak_jawaban' => 'boolean', 'tanggal_mulai' => 'datetime', 'tanggal_selesai' => 'datetime'])]
+#[Fillable(['judul', 'deskripsi', 'kompetensi_id', 'kompetensi_ids', 'level_id', 'jumlah_soal', 'durasi', 'nilai_lulus', 'acak_soal', 'acak_jawaban', 'tanggal_mulai', 'tanggal_selesai', 'status', 'created_by'])]
 class Asesmen extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected $casts = ['jumlah_soal' => 'integer', 'durasi' => 'integer', 'nilai_lulus' => 'decimal:2', 'acak_soal' => 'boolean', 'acak_jawaban' => 'boolean', 'tanggal_mulai' => 'datetime', 'tanggal_selesai' => 'datetime'];
+
+    protected function kompetensiIds(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value, true) ?? [],
+            set: fn ($value) => json_encode(is_array($value) ? $value : [$value]),
+        );
+    }
 
     public function kompetensi(): BelongsTo
     {

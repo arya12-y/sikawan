@@ -9,7 +9,7 @@ const permissionModulePaths = [
   { module: 'kategori', paths: ['/master-data', '/kategori'] },
   { module: 'walidata', paths: ['/master-data', '/walidata'] },
   { module: 'penguji', paths: ['/master-data', '/penguji'] },
-  { module: 'pengguna', paths: ['/master-data', '/users'] },
+  { module: 'pengguna', paths: ['/master-data', '/users', '/roles'] },
   { module: 'materi', paths: ['/pembelajaran', '/pembelajaran/video', '/pembelajaran/pdf', '/pembelajaran/presentasi'] },
   { module: 'bank-soal', paths: ['/bank-soal'] },
   { module: 'quiz', paths: ['/pembelajaran/quiz'] },
@@ -20,10 +20,17 @@ const permissionModulePaths = [
   { module: 'monitoring', paths: ['/monitoring'] },
   { module: 'laporan', paths: ['/laporan'] },
   { module: 'audit-log', paths: ['/audit-log'] },
-  { module: 'exam-schedules', paths: ['/exam-schedules'] },
+  { module: 'jadwal', paths: ['/exam-schedules'] },
   { module: 'notifikasi', paths: ['/notifikasi'] },
   { module: 'profile', paths: ['/profile'] },
 ]
+
+const masterDataPaths = ['/master-data', '/opd', '/bidang', '/jabatan', '/kompetensi', '/level', '/badge', '/kategori', '/walidata', '/penguji', '/users', '/roles']
+
+function isAdminRole(user) {
+  const roles = Array.isArray(user?.roles) ? user.roles : []
+  return roles.some((role) => ['Super Admin', 'Admin Diskominfo'].includes(role))
+}
 
 function getUserPermModules(user) {
   const perms = Array.isArray(user?.permissions) ? user.permissions : []
@@ -45,6 +52,7 @@ export const canAccessPath = (user, path) => {
   }
   
   if (roles.includes('Super Admin')) return true
+  if (!isAdminRole(user) && masterDataPaths.includes(path)) return false
 
   const modules = getUserPermModules(user)
   for (const entry of permissionModulePaths) {
@@ -80,7 +88,7 @@ function countdownLabel(dateStr) {
   return `Tersedia dalam ${diffMinutes} menit`
 }
 
-export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = false, asesmenStatus = null, allAsesmenDone = false, asesmenLulus = null) {
+export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = false, asesmenStatus = null, allAsesmenDone = false, asesmenLulus = null, wawancaraPending = false, menungguDinilai = false) {
   if (!isWalidataRole(user)) return { locked: false, message: '' }
   if (!phase) return { locked: true, message: '' }
   if (phase === 'none') return { locked: true, message: 'Belum ada jadwal' }
@@ -94,7 +102,7 @@ export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = fa
 
   if (path.startsWith('/pembelajaran') || path === '/bank-soal') {
     if (allAsesmenDone && lulus) return { locked: true, message: 'Semua asesmen telah selesai' }
-    if (asesmenStatus === 'selesai' && asesmenLulus === null) return { locked: true, message: 'Menunggu penilaian penguji' }
+    if (menungguDinilai || asesmenStatus === 'menunggu_dinilai' || (asesmenStatus === 'selesai' && asesmenLulus === null)) return { locked: true, message: 'Menunggu dinilai' }
     if (asesmenLulus === false) return { locked: false, message: '' }
     if (phase === 'exam' && asesmenStatus !== 'selesai') return { locked: true, message: 'Fokus ujian asesmen' }
     if (phase === 'closed') return { locked: true, message: 'Jadwal selesai' }
@@ -104,10 +112,10 @@ export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = fa
   }
 
   if (path === '/asesmen') {
+    if (asesmenLulus === true || lulus === true) return { locked: false, message: '' }
     if (allAsesmenDone && lulus) return { locked: true, message: 'Semua asesmen selesai' }
-    if (asesmenStatus === 'selesai' && asesmenLulus === null) return { locked: true, message: 'Menunggu penilaian' }
+    if (wawancaraPending || menungguDinilai || asesmenStatus === 'menunggu_dinilai' || (asesmenStatus === 'selesai' && asesmenLulus === null)) return { locked: false, message: '' }
     if (asesmenLulus === false) return { locked: false, message: '' }
-    if (allAsesmenDone && !lulus) return { locked: true, message: 'Hubungi admin untuk reset' }
     if (phase === 'exam') return { locked: false, message: '' }
     if (phase === 'closed') return { locked: true, message: 'Jadwal selesai' }
     return { locked: true, message: countdownLabel(schedule?.exam_start) }
@@ -123,12 +131,15 @@ export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = fa
   return { locked: false, message: '' }
 }
 
-export const firstAllowedPath = (user, phase, pretestDone) => {
+export const firstAllowedPath = (user, phase, pretestDone, asesmenLulus = null, wawancaraPending = false, menungguDinilai = false) => {
   const roles = Array.isArray(user?.roles) ? user.roles : []
   if (roles.some((role) => ['Super Admin', 'Admin Diskominfo'].includes(role))) return '/'
 
   if (isWalidataRole(user)) {
     if (!phase) return '/profile'
+    if (menungguDinilai) return '/asesmen'
+    if (asesmenLulus === false) return '/asesmen'
+    if (wawancaraPending) return '/asesmen'
     if (phase === 'pretest' && !pretestDone) return '/pretest'
     if (phase === 'pretest' && pretestDone) return '/pembelajaran'
     if (phase === 'learning') return '/pembelajaran'
@@ -141,7 +152,7 @@ export const firstAllowedPath = (user, phase, pretestDone) => {
 
   for (const entry of permissionModulePaths) {
     if (modules.has(entry.module)) {
-      const nonProfile = entry.paths.find((p) => p !== '/profile')
+      const nonProfile = entry.paths.find((p) => p !== '/profile' && (isAdminRole(user) || !masterDataPaths.includes(p)))
       if (nonProfile) return nonProfile
     }
   }

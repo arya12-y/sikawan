@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardCheck, RefreshCw, CheckCircle, XCircle, MessageSquare, Search, ThumbsUp, ThumbsDown } from 'lucide-react'
 import api from '../../api/axios'
-import { showSuccess, showError, showConfirm, showConfirmWithInput } from '../../utils/alert'
-import Swal from 'sweetalert2'
+import { showConfirm, showConfirmWithInput } from '../../utils/alert'
+import { toast } from '../../utils/toast'
 
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
 
@@ -12,11 +12,14 @@ function Penilaian() {
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState('belum')
+  const [verifTab, setVerifTab] = useState('menunggu')
   const [selected, setSelected] = useState(null)
   const [nilai, setNilai] = useState('')
   const [catatan, setCatatan] = useState('')
   const [wawancaraList, setWawancaraList] = useState([])
   const [wawancaraLoading, setWawancaraLoading] = useState(false)
+  const [riwayat, setRiwayat] = useState([])
+  const [riwayatLoading, setRiwayatLoading] = useState(false)
 
   // State: Jadwal Wawancara Modal
   const [jadwalModal, setJadwalModal] = useState(null)
@@ -53,7 +56,20 @@ function Penilaian() {
     }
   }, [])
 
-  useEffect(() => { queueMicrotask(() => { load(); loadWawancara() }) }, [load, loadWawancara])
+  const loadRiwayat = useCallback(async () => {
+    setRiwayatLoading(true)
+    try {
+      const res = await api.get('/penilaian/riwayat')
+      const data = res.data?.data ?? res.data
+      setRiwayat(Array.isArray(data) ? data : [])
+    } catch {
+      setRiwayat([])
+    } finally {
+      setRiwayatLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { queueMicrotask(() => { load(); loadWawancara(); loadRiwayat() }) }, [load, loadWawancara, loadRiwayat])
 
   const openGrading = (row) => { setSelected(row); setNilai(row.nilai ?? ''); setCatatan(row.catatan_penguji ?? '') }
 
@@ -64,7 +80,7 @@ function Penilaian() {
       await api.post(`/jawaban-pesertas/${selected.id}/grade-essay`, { nilai: Number(nilai), catatan_penguji: catatan || null })
       setSelected(null); load()
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal menyimpan nilai')
+      toast('error', e.response?.data?.message || 'Gagal menyimpan nilai')
     } finally { setSaving(false) }
   }
 
@@ -79,16 +95,9 @@ function Penilaian() {
     try {
       await api.post(`/peserta-asesmens/${pesertaId}/approve`, { catatan: result.value || null })
       setRows(prev => prev.map(r => r.peserta_id === pesertaId ? { ...r, lulus: true } : r))
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({
-        icon: 'success', title: 'Berhasil', text: `${nama} dinyatakan lulus.`,
-        confirmButtonText: 'OK', cancelButtonText: 'Cancel', showCancelButton: true,
-        reverseButtons: true, buttonsStyling: false,
-        background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-      })
+      toast('success', 'Berhasil menyetujui peserta')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal approve')
+      toast('error', e.response?.data?.message || 'Gagal approve')
     }
   }
 
@@ -103,16 +112,9 @@ function Penilaian() {
     try {
       await api.post(`/peserta-asesmens/${pesertaId}/tolak`, { catatan: result.value || null })
       setRows(prev => prev.map(r => r.peserta_id === pesertaId ? { ...r, lulus: false } : r))
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({
-        icon: 'success', title: 'Berhasil', text: `${nama} dinyatakan tidak lulus.`,
-        confirmButtonText: 'OK', cancelButtonText: 'Cancel', showCancelButton: true,
-        reverseButtons: true, buttonsStyling: false,
-        background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-      })
+      toast('success', 'Peserta berhasil ditolak')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal tolak')
+      toast('error', e.response?.data?.message || 'Gagal tolak')
     }
   }
 
@@ -123,16 +125,10 @@ function Penilaian() {
       await api.post(`/penilaian/wawancara/${jadwalModal.peserta_id}/jadwal`, jadwalForm)
       setJadwalModal(null)
       loadWawancara()
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({
-        icon: 'success', title: 'Terjadwal', text: 'Wawancara berhasil dijadwalkan.',
-        confirmButtonText: 'OK', cancelButtonText: 'Cancel', showCancelButton: true,
-        reverseButtons: true, buttonsStyling: false,
-        background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-      })
+      load()
+      toast('success', 'Wawancara berhasil dijadwalkan')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal simpan jadwal')
+      toast('error', e.response?.data?.message || 'Gagal simpan jadwal')
     } finally { setSaving(false) }
   }
 
@@ -153,16 +149,9 @@ function Penilaian() {
     try {
       await api.delete(`/penilaian/wawancara/${id}`)
       loadWawancara()
-      const isDark = document.documentElement.classList.contains('dark')
-      Swal.fire({
-        icon: 'success', title: 'Dihapus', text: 'Wawancara berhasil dihapus.',
-        confirmButtonText: 'OK', cancelButtonText: 'Cancel', showCancelButton: true,
-        reverseButtons: true, buttonsStyling: false,
-        background: isDark ? '#14141E' : '#FFFFFF', color: isDark ? '#F1F5F9' : '#0F172A',
-        customClass: { popup: 'swal-premium', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' },
-      })
+      toast('success', 'Berhasil menghapus Wawancara')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal hapus wawancara')
+      toast('error', e.response?.data?.message || 'Gagal hapus wawancara')
     }
   }
 
@@ -173,18 +162,18 @@ function Penilaian() {
         nilai_pemahaman: nilaiForm.pemahaman, nilai_komunikasi: nilaiForm.komunikasi,
         nilai_penerapan: nilaiForm.penerapan, nilai_sikap: nilaiForm.sikap,
       })
-      await showSuccess('Tersimpan', 'Nilai wawancara disimpan.')
+      toast('success', 'Berhasil menyimpan Nilai wawancara')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal simpan nilai')
+      toast('error', e.response?.data?.message || 'Gagal simpan nilai')
       setWSaving(false); return
     }
     try {
       await api.post(`/penilaian/wawancara/${nilaiWawancara.id}/selesai`, { catatan_wawancara: catatanWawancara, rekomendasi })
       setNilaiWawancara(null)
       loadWawancara()
-      showSuccess('Selesai', `Wawancara selesai. Rekomendasi: ${rekomendasi === 'lulus' ? 'Lulus ✅' : 'Tidak Lulus ❌'}`)
+      toast('success', 'Berhasil menyelesaikan Wawancara')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal selesaikan wawancara')
+      toast('error', e.response?.data?.message || 'Gagal selesaikan wawancara')
     } finally { setWSaving(false) }
   }
 
@@ -193,11 +182,15 @@ function Penilaian() {
   const sudahDinilai = filteredRows.filter(r => r.dinilai)
   const pesertaGroups = {}
   sudahDinilai.forEach(r => {
-    if (!pesertaGroups[r.peserta_id]) pesertaGroups[r.peserta_id] = { peserta_id: r.peserta_id, nama: r.peserta_nama, asesmen: r.asesmen, total: 0, graded: 0, lulus: r.lulus }
+    if (!pesertaGroups[r.peserta_id]) pesertaGroups[r.peserta_id] = { peserta_id: r.peserta_id, nama: r.peserta_nama, asesmen: r.asesmen, total: 0, graded: 0, lulus: r.lulus, wawancara_pending: r.wawancara_pending ?? (r.status === 'wawancara'), status: r.status }
+    pesertaGroups[r.peserta_id].wawancara_pending = r.wawancara_pending ?? (r.status === 'wawancara')
+    pesertaGroups[r.peserta_id].status = r.status
     pesertaGroups[r.peserta_id].total++; pesertaGroups[r.peserta_id].graded++; if (r.lulus !== null) pesertaGroups[r.peserta_id].lulus = r.lulus
   })
   belumDinilai.forEach(r => {
-    if (!pesertaGroups[r.peserta_id]) pesertaGroups[r.peserta_id] = { peserta_id: r.peserta_id, nama: r.peserta_nama, asesmen: r.asesmen, total: 0, graded: 0, lulus: null }
+    if (!pesertaGroups[r.peserta_id]) pesertaGroups[r.peserta_id] = { peserta_id: r.peserta_id, nama: r.peserta_nama, asesmen: r.asesmen, total: 0, graded: 0, lulus: null, wawancara_pending: r.wawancara_pending ?? (r.status === 'wawancara'), status: r.status }
+    pesertaGroups[r.peserta_id].wawancara_pending = r.wawancara_pending ?? (r.status === 'wawancara')
+    pesertaGroups[r.peserta_id].status = r.status
     pesertaGroups[r.peserta_id].total++
   })
   const siapVerifikasi = Object.values(pesertaGroups).filter(p => p.total === p.graded)
@@ -216,7 +209,7 @@ function Penilaian() {
             <button onClick={() => setTab('belum')} className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${tab === 'belum' ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}>Belum Dinilai ({belumDinilai.length})</button>
             <button onClick={() => setTab('sudah')} className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${tab === 'sudah' ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}>Sudah Dinilai ({sudahDinilai.length})</button>
             <button onClick={() => { setTab('wawancara'); loadWawancara() }} className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${tab === 'wawancara' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-500 hover:text-slate-300'}`}>Wawancara ({wawancaraList.length})</button>
-            <button onClick={() => setTab('verifikasi')} className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${tab === 'verifikasi' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>Verifikasi ({siapVerifikasi.length})</button>
+            <button onClick={() => { setTab('verifikasi'); loadRiwayat() }} className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${tab === 'verifikasi' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>Verifikasi ({siapVerifikasi.length})</button>
           </div>
           <div className="relative ml-auto">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
@@ -304,41 +297,44 @@ function Penilaian() {
 
         {/* Tab: Verifikasi */}
         {tab === 'verifikasi' && (
-          loading ? (
-            <div className="flex items-center justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>
-          ) : siapVerifikasi.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-slate-500"><ClipboardCheck className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada peserta siap verifikasi</p></div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-xs uppercase tracking-wider text-slate-500">
-                  <tr className="border-b border-[#262636] bg-[#09090E]">
-                    <th className="px-5 py-3.5 font-semibold">Peserta</th><th className="px-5 py-3.5 font-semibold">Asesmen</th><th className="px-5 py-3.5 font-semibold text-center">Essay</th><th className="px-5 py-3.5 text-right font-semibold w-72">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#262636]">
-                  {siapVerifikasi.map((p) => {
-                    const sudahDiVerifikasi = p.lulus !== null && p.lulus !== undefined
-                    return (
-                    <tr className="transition hover:bg-white/[0.02]" key={p.peserta_id}>
-                      <td className="px-5 py-4"><p className="font-medium text-slate-100">{p.nama}</p>{sudahDiVerifikasi && <p className={`mt-0.5 text-xs ${p.lulus ? 'text-emerald-400' : 'text-rose-400'}`}>{p.lulus ? '✅ Lulus' : '❌ Tidak Lulus'}</p>}</td>
-                      <td className="px-5 py-4 text-slate-400">{p.asesmen}</td>
-                      <td className="px-5 py-4 text-center"><span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400"><CheckCircle className="h-3 w-3" /> {p.graded}/{p.total}</span></td>
-                      <td className="px-5 py-4 text-right">
-                        {!sudahDiVerifikasi ? (
-                        <div className="flex justify-end gap-1.5">
-                          <button onClick={() => { setJadwalModal({ peserta_id: p.peserta_id, nama: p.nama, asesmen: p.asesmen }) }} className="rounded-lg border border-amber-600/20 px-2.5 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/10"><MessageSquare className="inline-block h-3.5 w-3.5 -mt-0.5" /> Wawancara</button>
-                          <button onClick={() => doApprove(p.peserta_id, p.nama)} className="rounded-lg border border-emerald-600/20 px-2.5 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/10"><ThumbsUp className="inline-block h-3.5 w-3.5 -mt-0.5" /> Approve</button>
-                          <button onClick={() => doTolak(p.peserta_id, p.nama)} className="rounded-lg border border-rose-600/20 px-2.5 py-1.5 text-xs font-medium text-rose-400 transition hover:bg-rose-500/10"><ThumbsDown className="inline-block h-3.5 w-3.5 -mt-0.5" /> Tolak</button>
-                        </div>
-                        ) : <span className="text-xs text-slate-500">Selesai</span>}
-                      </td>
-                    </tr>
-                  )})}
-                </tbody>
-              </table>
+          <div className="space-y-5 p-5">
+            <div className="flex gap-1 px-1 pt-0">
+              <button onClick={() => setVerifTab('menunggu')} className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${verifTab === 'menunggu' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>Menunggu Verifikasi ({siapVerifikasi.length})</button>
+              <button onClick={() => setVerifTab('riwayat')} className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${verifTab === 'riwayat' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>Riwayat ({riwayat.length})</button>
             </div>
-          )
+            {verifTab === 'menunggu' && (
+            <section className="rounded-2xl border border-[#262636] bg-[#14141E] shadow-sm">
+              <div className="border-b border-[#262636] px-5 py-4"><h3 className="text-sm font-bold text-slate-100">Menunggu Verifikasi</h3></div>
+              {loading ? (
+                <div className="flex items-center justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>
+              ) : siapVerifikasi.length === 0 ? (
+                <div className="flex flex-col items-center py-16 text-slate-500"><ClipboardCheck className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada peserta siap verifikasi</p></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="text-xs uppercase tracking-wider text-slate-500"><tr className="border-b border-[#262636] bg-[#09090E]"><th className="px-5 py-3.5 font-semibold">Peserta</th><th className="px-5 py-3.5 font-semibold">Asesmen</th><th className="px-5 py-3.5 font-semibold text-center">Essay</th><th className="px-5 py-3.5 text-right font-semibold w-72">Aksi</th></tr></thead>
+                    <tbody className="divide-y divide-[#262636]">
+                      {siapVerifikasi.map((p) => {
+                        const sudahDiVerifikasi = p.lulus !== null && p.lulus !== undefined
+                        const wawancara = p.wawancara_pending === true || p.status === 'wawancara'
+                        return <tr className="transition hover:bg-white/[0.02]" key={p.peserta_id}>
+                          <td className="px-5 py-4"><p className="font-medium text-slate-100">{p.nama}</p>{sudahDiVerifikasi && <p className={`mt-0.5 text-xs ${p.lulus ? 'text-emerald-400' : 'text-rose-400'}`}>{p.lulus ? '✅ Lulus' : '❌ Tidak Lulus'}</p>}</td><td className="px-5 py-4 text-slate-400">{p.asesmen}</td><td className="px-5 py-4 text-center"><span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400"><CheckCircle className="h-3 w-3" /> {p.graded}/{p.total}</span></td><td className="px-5 py-4 text-right">
+                            {!sudahDiVerifikasi && !wawancara ? <div className="flex justify-end gap-1.5"><button onClick={() => setJadwalModal({ peserta_id: p.peserta_id, nama: p.nama, asesmen: p.asesmen })} className="rounded-lg border border-amber-600/20 px-2.5 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/10"><MessageSquare className="inline-block h-3.5 w-3.5 -mt-0.5" /> Wawancara</button><button onClick={() => doApprove(p.peserta_id, p.nama)} className="rounded-lg border border-emerald-600/20 px-2.5 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/10"><ThumbsUp className="inline-block h-3.5 w-3.5 -mt-0.5" /> Approve</button><button onClick={() => doTolak(p.peserta_id, p.nama)} className="rounded-lg border border-rose-600/20 px-2.5 py-1.5 text-xs font-medium text-rose-400 transition hover:bg-rose-500/10"><ThumbsDown className="inline-block h-3.5 w-3.5 -mt-0.5" /> Tolak</button></div> : wawancara ? <div className="flex items-center justify-end gap-2"><span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-400">🟡 Wawancara dijadwalkan</span><span className="text-xs text-slate-500">Menunggu</span></div> : <span className="text-xs text-slate-500">Selesai</span>}
+                          </td></tr>
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+            )}
+            {verifTab === 'riwayat' && (
+            <section className="rounded-2xl border border-[#262636] bg-[#14141E] shadow-sm">
+              <div className="border-b border-[#262636] px-5 py-4"><h3 className="text-sm font-bold text-slate-100">Riwayat Verifikasi</h3></div>
+              {riwayatLoading ? <div className="flex items-center justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div> : riwayat.length === 0 ? <div className="py-12 text-center text-sm text-slate-500">Belum ada riwayat verifikasi</div> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-xs uppercase tracking-wider text-slate-500"><tr className="border-b border-[#262636] bg-[#09090E]"><th className="px-5 py-3.5 font-semibold">Peserta</th><th className="px-5 py-3.5 font-semibold">Asesmen</th><th className="px-5 py-3.5 font-semibold">Nilai</th><th className="px-5 py-3.5 font-semibold">Hasil</th><th className="px-5 py-3.5 font-semibold">Cara Verifikasi</th><th className="px-5 py-3.5 font-semibold">Waktu</th></tr></thead><tbody className="divide-y divide-[#262636]">{riwayat.map((r, i) => <tr key={`${r.peserta_id}-${r.approved_at}-${i}`}><td className="px-5 py-4 font-medium text-slate-100">{r.nama}</td><td className="px-5 py-4 text-slate-400">{r.asesmen}</td><td className="px-5 py-4 text-slate-300">{r.nilai ?? '-'}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${r.lulus ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>{r.lulus ? '✅ Lulus' : '❌ Tidak Lulus'}</span></td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${r.via_wawancara ? 'bg-amber-500/10 text-amber-400' : 'bg-indigo-500/10 text-indigo-400'}`}>{r.via_wawancara ? '🟡 Via Wawancara' : '⚡ Langsung'}</span></td><td className="px-5 py-4 text-slate-400">{r.approved_at ? new Date(r.approved_at).toLocaleDateString('id-ID') : '-'}</td></tr>)}</tbody></table></div>}
+            </section>
+            )}
+          </div>
         )}
       </div>
 

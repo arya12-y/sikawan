@@ -5,7 +5,8 @@ import api from '../../api/axios'
 import { can } from '../../utils/can'
 import { useAuth } from '../../hooks/useAuth'
 import { confirmDelete } from '../../utils/confirm'
-import { showWarning, showSuccess, showError } from '../../utils/alert'
+import { showConfirm } from '../../utils/alert'
+import { toast } from '../../utils/toast'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
@@ -54,7 +55,7 @@ function BankSoal() {
       setLastPage(d.last_page || 1)
       setTotal(d.total || 0)
       setPage(d.current_page || 1)
-    } catch (e) { alert(e.response?.data?.message || 'Gagal memuat bank soal') } finally { setLoading(false) }
+    } catch (e) { toast('error', e.response?.data?.message || 'Gagal memuat bank soal') } finally { setLoading(false) }
   }, [search, filterJenis, filterTipe, filterKompetensi])
 
   const loadRefs = useCallback(async () => {
@@ -99,7 +100,7 @@ function BankSoal() {
   const save = async (data) => {
     setSaving(true)
     if (selectedTipe.length === 0) {
-      await showWarning('Tipe belum dipilih', 'Pilih minimal 1 tipe (Quiz, Pretest, atau Asesmen)', 'Oke')
+      await showConfirm('Tipe belum dipilih', 'Pilih minimal 1 tipe (Quiz, Pretest, atau Asesmen)', 'Oke', 'Cancel', 'warning')
       setSaving(false)
       return
     }
@@ -111,10 +112,10 @@ function BankSoal() {
       if (editing?.id) await api.put(`/bank-soals/${editing.id}`, payload)
       else await api.post('/bank-soals', payload)
       await goToPage(1)
-      await showSuccess('Berhasil', 'Soal berhasil disimpan')
+      toast('success', 'Berhasil menyimpan Soal')
       setShowForm(false)
     } catch (e) {
-      await showError('Gagal', e.response?.data?.message || 'Gagal menyimpan soal')
+      toast('error', e.response?.data?.message || 'Gagal menyimpan soal')
     } finally {
       setSaving(false)
     }
@@ -123,7 +124,7 @@ function BankSoal() {
   const remove = async (row) => { if (await confirmDelete(row.pertanyaan || 'Soal ini')) { await api.delete(`/bank-soals/${row.id}`); goToPage(1) } }
 
   const exportCsv = async () => {
-    try { const res = await api.get('/bank-soals/export?format=csv', { responseType: 'blob' }); const url = URL.createObjectURL(new Blob([res.data])); const link = document.createElement('a'); link.href = url; link.download = 'bank-soal.csv'; link.click(); URL.revokeObjectURL(url) } catch (e) { alert(e.response?.data?.message || 'Gagal export bank soal') }
+    try { const res = await api.get('/bank-soals/export?format=csv', { responseType: 'blob' }); const url = URL.createObjectURL(new Blob([res.data])); const link = document.createElement('a'); link.href = url; link.download = 'bank-soal.csv'; link.click(); URL.revokeObjectURL(url) } catch (e) { toast('error', e.response?.data?.message || 'Gagal export bank soal') }
   }
 
   const handleImport = async () => {
@@ -153,16 +154,16 @@ function BankSoal() {
         items.push({ pertanyaan, jawaban_benar: jawabanBenar, pembahasan, jenis, tipe: ['quiz'], bobot, pilihan, kompetensi_id: kompetensi?.id || kompetensis[0]?.id || '', is_active: true })
       }
       if (items.length === 0) {
-        await showError('Format tidak valid', 'Periksa format teks import Anda')
+        toast('error', 'Periksa format teks import Anda')
         setImporting(false)
         return
       }
       await api.post('/bank-soals/import', { items })
-      await showSuccess('Berhasil', `${items.length} soal berhasil diimport`)
+      toast('success', `Berhasil menyimpan ${items.length} soal`)
       setShowImport(false)
       setImportText('')
       goToPage(1)
-    } catch (e) { alert(e.response?.data?.message || 'Gagal import soal') } finally { setImporting(false) }
+    } catch (e) { toast('error', e.response?.data?.message || 'Gagal import soal') } finally { setImporting(false) }
   }
 
   const handleFileImport = async (e) => {

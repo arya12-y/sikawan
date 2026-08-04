@@ -10,7 +10,7 @@ class ExamSchedule extends Model
         'title', 'pretest_start', 'pretest_end',
         'learning_start', 'learning_end',
         'exam_start', 'exam_end',
-        'kompetensi_ids', 'pretest_jumlah_per_kompetensi', 'is_active', 'status',
+        'kompetensi_ids', 'pretest_jumlah_per_kompetensi', 'pretest_durasi', 'is_active', 'status',
     ];
 
     protected function casts(): array

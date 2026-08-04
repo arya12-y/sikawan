@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2'
+import { toast } from './toast'
 
 /**
  * Get current theme mode
@@ -95,15 +96,8 @@ export const showInfo = (title, text, confirmButtonText = 'OK') => {
  * @param {number} timer - Auto-close timer in milliseconds (default: 3000)
  */
 export const showSuccessToast = (title, text, timer = 3000) => {
-  return Swal.fire({
-    icon: 'success',
-    title,
-    text,
-    confirmButtonText: 'OK',
-    timer,
-    timerProgressBar: true,
-    ...getBaseConfig(),
-  })
+  toast('success', text || title)
+  return Promise.resolve({ isDismissed: true, timer })
 }
 
 /**

@@ -1,12 +1,13 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { CheckCircle, AlertTriangle, Search, Plus, X, FileDown, Download, AlertCircle, PlayCircle, FileText, Presentation, Play, Eye, Pencil, Trash2, Upload, ArrowLeft, GraduationCap, HelpCircle } from 'lucide-react'
+import { CheckCircle, AlertTriangle, Search, Plus, X, FileDown, Download, AlertCircle, PlayCircle, FileText, Presentation, Play, Eye, Pencil, Trash2, Upload, ArrowLeft, GraduationCap, HelpCircle, Lock, Filter, ChevronDown } from 'lucide-react'
 import api from '../../api/axios'
 import { can } from '../../utils/can'
 import { useAuth } from '../../hooks/useAuth'
 import { useSchedule } from '../../hooks/useSchedule'
 import { confirmDelete } from '../../utils/confirm'
+import { toast } from '../../utils/toast'
 
 const normalizeRows = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
 const jenisConfig = {
@@ -175,6 +176,7 @@ function ViewerContent({ viewing, jenis, config, onDownload, onVideoProgress }) 
 function MateriCard({ row, config, onView, onDownload, onEdit, onRemove, onQuiz, canEdit, canDelete, isCompleted, progressValue }) {
   const Icon = config.icon
   const ViewIcon = config.viewIcon
+  const quizUnlocked = progressValue > 0 || isCompleted
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#1E1E2E] bg-[#14141E]/95 backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/10">
       {isCompleted && (
@@ -218,7 +220,7 @@ function MateriCard({ row, config, onView, onDownload, onEdit, onRemove, onQuiz,
       </div>
       <div className="flex items-center gap-1.5 border-t border-[#1E1E2E] p-3">
         <button onClick={() => onView(row)} className="group/btn flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:from-indigo-500 hover:to-violet-500"><ViewIcon className="h-4 w-4" />{config.viewLabel}</button>
-        <button onClick={() => onQuiz(row)} className="group/btn inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-indigo-400" title="Quiz"><HelpCircle className="h-4 w-4" /></button>
+        <button onClick={() => onQuiz(row)} disabled={!quizUnlocked} className="group/btn inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-indigo-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400" title={quizUnlocked ? 'Quiz' : 'Tonton materi terlebih dahulu untuk membuka quiz'}>{quizUnlocked ? <HelpCircle className="h-4 w-4" /> : <Lock className="h-4 w-4" />}</button>
         {row.file_path && (
           <button onClick={() => onDownload(row)} className="group/btn inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-indigo-400" title="Download"><Download className="h-4 w-4" /></button>
         )}
@@ -388,6 +390,7 @@ function MateriList({ jenis }) {
   const isAdmin = user?.roles?.some(r => ['Super Admin', 'Admin Diskominfo'].includes(r))
 
   const [rows, setRows] = useState([])
+  const [allRows, setAllRows] = useState([])
   const [kompetensis, setKompetensis] = useState([])
   const [levels, setLevels] = useState([])
   const [kategoris, setKategoris] = useState([])
@@ -395,6 +398,8 @@ function MateriList({ jenis }) {
   const [selectedSoalIds, setSelectedSoalIds] = useState([])
   const [manualSoalText, setManualSoalText] = useState('')
   const [search, setSearch] = useState('')
+  const [filterLevel, setFilterLevel] = useState('')
+  const [filterKompetensi, setFilterKompetensi] = useState('')
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -417,6 +422,29 @@ function MateriList({ jenis }) {
   const [submittingQuiz, setSubmittingQuiz] = useState(false)
   const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitted } } = useForm()
 
+  const levelOptions = useMemo(() => {
+    const byId = new Map()
+    allRows.forEach(row => {
+      const level = row.level
+      if (level?.id != null && !byId.has(String(level.id))) byId.set(String(level.id), { id: level.id, nama: level.nama || 'Tanpa Nama', urutan: level.urutan })
+    })
+    return [...byId.values()].sort((a, b) => {
+      if (a.urutan != null && b.urutan != null && a.urutan !== b.urutan) return a.urutan - b.urutan
+      if (a.urutan != null) return -1
+      if (b.urutan != null) return 1
+      return a.nama.localeCompare(b.nama, 'id')
+    })
+  }, [allRows])
+
+  const kompetensiOptions = useMemo(() => {
+    const byId = new Map()
+    allRows.forEach(row => {
+      const kompetensi = row.kompetensi
+      if (kompetensi?.id != null && !byId.has(String(kompetensi.id))) byId.set(String(kompetensi.id), { id: kompetensi.id, nama: kompetensi.nama || 'Tanpa Nama' })
+    })
+    return [...byId.values()].sort((a, b) => a.nama.localeCompare(b.nama, 'id'))
+  }, [allRows])
+
   useEffect(() => {
     if (!notif) return
     const t = setTimeout(() => setNotif(null), 4000)
@@ -428,7 +456,8 @@ function MateriList({ jenis }) {
     try {
       const params = { jenis, per_page: 50 }
       if (search) params.search = search
-      if (urlKompetensiId) params.kompetensi_id = urlKompetensiId
+      if (filterLevel) params.level_id = filterLevel
+      if (filterKompetensi || urlKompetensiId) params.kompetensi_id = filterKompetensi || urlKompetensiId
       const res = await api.get('/materis', { params })
       const data = res.data?.data ?? res.data
       const items = Array.isArray(data) ? data : []
@@ -444,13 +473,27 @@ function MateriList({ jenis }) {
       setCompletedIds(done)
       setProgressMap(prog)
     } catch (e) {
-      alert(e.response?.data?.message || 'Gagal memuat data')
+      toast('error', e.response?.data?.message || 'Gagal memuat data')
     } finally {
       setLoading(false)
     }
-  }, [jenis, search, urlKompetensiId])
+  }, [jenis, search, filterLevel, filterKompetensi, urlKompetensiId])
+
+  const loadOptions = useCallback(async () => {
+    try {
+      const res = await api.get('/materis', { params: { jenis, per_page: 200 } })
+      const data = res.data?.data ?? res.data
+      setAllRows(Array.isArray(data) ? data : [])
+    } catch {
+      setAllRows([])
+    }
+  }, [jenis])
 
   const loadRefs = useCallback(async () => {
+    if (!can(user, 'materi.create')) {
+      setKompetensis([]); setLevels([]); setKategoris([]); setBankSoals([])
+      return
+    }
     try {
       const [k, l, c, s] = await Promise.all([api.get('/kompetensis'), api.get('/levels'), api.get('/kategoris'), api.get('/bank-soals?tipe=quiz&per_page=200')])
       setKompetensis(Array.isArray(k.data?.data ?? k.data) ? (k.data?.data ?? k.data) : [])
@@ -460,17 +503,21 @@ function MateriList({ jenis }) {
     } catch {
       setKompetensis([]); setLevels([]); setKategoris([]); setBankSoals([])
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     queueMicrotask(() => { load(); loadRefs() })
   }, [load, loadRefs])
 
   useEffect(() => {
+    queueMicrotask(loadOptions)
+  }, [loadOptions])
+
+  useEffect(() => {
     if (scheduleStatus?.level_id && scheduleStatus?.level_name) {
       setUserLevelName(scheduleStatus.level_name)
       const lvl = levels.find(l => l.id === scheduleStatus.level_id)
-      setUserLevelUrutan(lvl?.urutan ?? null)
+      setUserLevelUrutan(lvl?.urutan ?? scheduleStatus.level_urutan ?? null)
     }
   }, [scheduleStatus, levels])
 
@@ -503,6 +550,10 @@ function MateriList({ jenis }) {
   }, [showForm, editing, reset])
 
   const onSubmit = async (data) => {
+    if (selectedSoalIds.length === 0 && !manualSoalText.trim()) {
+      toast('warning', 'Pilih minimal 1 soal quiz atau isi soal manual.')
+      return
+    }
     setSaving(true)
     try {
       const formData = new FormData()
@@ -528,7 +579,7 @@ function MateriList({ jenis }) {
         await api.post('/materis', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
       }
       setSaving(false); setShowForm(false); setManualSoalText('')
-      setNotif({ type: 'success', text: `Berhasil menyimpan ${config.title}` })
+      toast('success', `Berhasil menyimpan ${config.title}`)
       load()
     } catch (e) {
       setSaving(false)
@@ -541,9 +592,10 @@ function MateriList({ jenis }) {
     if (!await confirmDelete(row.judul)) return
     try {
       await api.delete(`/materis/${row.id}`)
+      toast('success', `Berhasil menghapus ${config.title}`)
       load()
     } catch (e) {
-      alert(e.response?.data?.message || 'Gagal menghapus')
+      toast('error', e.response?.data?.message || 'Gagal menghapus')
     }
   }
 
@@ -560,10 +612,9 @@ function MateriList({ jenis }) {
   const trackView = (row) => {
     setViewing(row)
     if (row.jenis !== 'video') {
-      const hasSoals = (row.soals_count || 0) > 0
-      const pct = hasSoals ? 50 : 100
+      const pct = 50
       api.post(`/materi/${row.id}/progress`, { progress: pct }).then(res => {
-        if (pct === 100) setCompletedIds(prev => new Set([...prev, row.id]))
+        setProgressMap(prev => ({ ...prev, [row.id]: Math.max(prev[row.id] || 0, pct) }))
         const data = res.data
         if (data?.level_up) {
           const isDark = document.documentElement.classList.contains('dark')
@@ -601,7 +652,12 @@ function MateriList({ jenis }) {
   }
 
   const submitQuiz = async () => {
-    if (Object.keys(quizAnswers).length === 0) return
+    if (quizSoals.length === 0) return
+    const belumDijawab = quizSoals.filter(s => !String(quizAnswers[s.id] || '').trim())
+    if (belumDijawab.length > 0) {
+      toast('warning', `Masih ada ${belumDijawab.length} soal belum dijawab`)
+      return
+    }
     setSubmittingQuiz(true)
     try {
       const jawaban = quizSoals.map(s => ({ soal_id: s.id, jawaban: quizAnswers[s.id] || '' }))
@@ -624,7 +680,7 @@ function MateriList({ jenis }) {
           confirmButtonColor: '#6366f1',
         })
       }
-    } catch { alert('Gagal mengirim jawaban') } finally { setSubmittingQuiz(false) }
+    } catch { toast('error', 'Gagal mengirim jawaban') } finally { setSubmittingQuiz(false) }
   }
 
   const Icon = config.icon
@@ -694,7 +750,7 @@ function MateriList({ jenis }) {
 
           <header className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] border-b-indigo-500/40 bg-[#14141E] p-6 shadow-lg shadow-black/10">
             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-4">
               <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg" style={{ background: config.gradient }}>
                   <Icon className="h-7 w-7 text-white" />
@@ -708,31 +764,39 @@ function MateriList({ jenis }) {
                   <p className="mt-1 text-sm leading-6 text-slate-400">Jelajahi materi pembelajaran untuk Walidata.</p>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-3">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                  <input
-                    className="h-10 w-44 rounded-full border border-[#262636] bg-[#1A1A26] pl-9 pr-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                    placeholder="Cari materi..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && load()}
-                  />
-                </div>
-                {urlKompetensiId && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400">
-                    {kompetensis.find(k => String(k.id) === urlKompetensiId)?.nama || 'Kompetensi'}
-                    <button onClick={() => setSearchParams({})} className="ml-1 hover:text-indigo-300">&times;</button>
-                  </span>
-                )}
-                {canCreate && (
-                  <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-violet-500">
-                    <Plus className="h-4 w-4" />Tambah
-                  </button>
-                )}
-              </div>
             </div>
           </header>
+          <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                  <input className="h-8 w-36 rounded-full border border-[#262636] bg-[#1A1A26] pl-8 pr-3 text-xs text-slate-100 placeholder-slate-500 outline-none transition-all focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" placeholder="Cari materi..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} />
+                </div>
+                <div className="relative">
+                  <Filter className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
+                  <select className="h-8 appearance-none rounded-full border border-[#262636] bg-[#1A1A26] pl-8 pr-7 text-xs text-slate-100 outline-none transition-all focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)} aria-label="Filter Level">
+                    <option value="">Semua Level</option>
+                    {levelOptions.map(level => <option key={level.id} value={level.id}>{level.nama}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
+                </div>
+                <div className="relative">
+                  <Filter className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
+                  <select className="h-8 appearance-none rounded-full border border-[#262636] bg-[#1A1A26] pl-8 pr-7 text-xs text-slate-100 outline-none transition-all focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" value={filterKompetensi} onChange={(e) => { setFilterKompetensi(e.target.value); if (urlKompetensiId) setSearchParams({}) }} aria-label="Filter Kompetensi">
+                    <option value="">Semua Kompetensi</option>
+                    {kompetensiOptions.map(kompetensi => <option key={kompetensi.id} value={kompetensi.id}>{kompetensi.nama}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
+                </div>
+                {urlKompetensiId && <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400">
+                  {kompetensiOptions.find(k => String(k.id) === urlKompetensiId)?.nama || kompetensis.find(k => String(k.id) === urlKompetensiId)?.nama || 'Kompetensi'}
+                  <button onClick={() => setSearchParams({})} className="ml-1 hover:text-indigo-300">&times;</button>
+                </span>}
+              </div>
+              {canCreate && <button onClick={openCreate} className="inline-flex items-center gap-2 self-start rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-violet-500 sm:self-auto"><Plus className="h-3.5 w-3.5" />Tambah</button>}
+            </div>
+          </div>
         </>
       )}
 
@@ -775,7 +839,7 @@ function MateriList({ jenis }) {
                   <section key={levelId}>
                     <div className="mb-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-400">{level?.nama || 'Tanpa Level'}</span>
+                        <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-400">{level?.nama || items[0]?.level?.nama || (levelId ? `Level ${levelId}` : 'Tanpa Level')}</span>
                         <span className="text-xs text-slate-500">{doneCount}/{total} selesai</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -794,7 +858,7 @@ function MateriList({ jenis }) {
                             <div key={row.id} className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] bg-[#14141E]/50 p-4 opacity-40">
                               <div className="flex flex-col items-center py-8">
                                 <span className="text-3xl">🔒</span>
-                                <span className="mt-2 text-xs font-medium text-slate-500">{row.level?.nama}</span>
+                                <span className="mt-2 text-xs font-medium text-slate-500">{row.level?.nama || (row.level_id ? `Level ${row.level_id}` : 'Tanpa Level')}</span>
                                 <span className="mt-4 text-sm text-slate-600">Selesaikan level sebelumnya terlebih dahulu</span>
                               </div>
                             </div>

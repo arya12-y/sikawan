@@ -63,4 +63,14 @@ class UserController extends CrudController
 
         return response()->json($user->load($this->with));
     }
+
+    public function destroy($id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        $old = $user->toArray();
+        $user->forceDelete();
+        AuditLogService::log('delete', 'User', null, $old, null);
+
+        return response()->json(['message' => 'User dihapus permanen']);
+    }
 }

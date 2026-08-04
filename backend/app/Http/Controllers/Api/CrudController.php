@@ -79,7 +79,12 @@ abstract class CrudController extends Controller
     {
         $model = $this->modelClass()::findOrFail($id);
         $old = $model->toArray();
-        $model->delete();
+        foreach (['soals', 'bankSoals', 'asesmens', 'materis'] as $relation) {
+            if (method_exists($model, $relation)) {
+                $model->{$relation}()->detach();
+            }
+        }
+        $model->forceDelete();
         AuditLogService::log('delete', class_basename($this->modelClass()), null, $old, null);
 
         return response()->json(['message' => 'Deleted']);

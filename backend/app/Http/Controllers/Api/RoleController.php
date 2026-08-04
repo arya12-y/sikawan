@@ -31,7 +31,7 @@ class RoleController extends Controller
             'permissions.*' => ['string', 'exists:permissions,name'],
         ]);
 
-        $role = Role::create(['name' => $data['name'], 'guard_name' => 'web']);
+        $role = Role::create(['name' => $data['name'], 'guard_name' => 'sanctum']);
         if (!empty($data['permissions'])) {
             $role->syncPermissions($data['permissions']);
         }
@@ -70,7 +70,7 @@ class RoleController extends Controller
         if (in_array($role->name, ['Super Admin', 'Admin Diskominfo'])) {
             return response()->json(['message' => 'Role bawaan tidak bisa dihapus'], 422);
         }
-        $role->delete();
+        $role->forceDelete();
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 

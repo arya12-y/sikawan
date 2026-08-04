@@ -1,11 +1,17 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Clock, FileCheck, FileText, GraduationCap, RefreshCw, Trophy, XCircle } from 'lucide-react'
 import api from '../../api/axios'
 import { useAuth } from '../../hooks/useAuth'
-import { showError, showSuccess, showConfirm } from '../../utils/alert'
+import { showConfirm } from '../../utils/alert'
+import { toast } from '../../utils/toast'
 
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
+
+function SkorKompetensi({ scores }) {
+  if (!Array.isArray(scores) || scores.length === 0) return null
+  return <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-7 shadow-sm"><h3 className="text-base font-bold text-slate-100 mb-5">Skor per Kompetensi</h3><div className="space-y-4">{scores.map((item, i) => { const score = Number(item.skor ?? item.nilai ?? 0); return <div key={i}><div className="flex items-center justify-between mb-1.5"><span className="text-sm font-medium text-slate-300">{item.kompetensi || '-'}</span><span className="text-sm font-bold text-slate-100">{Math.round(score)}</span></div><div className="h-2.5 rounded-full bg-[#1E1E2E] overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all" style={{ width: `${Math.min(100, Math.max(0, score))}%` }} /></div></div> })}</div></div>
+}
 
 function Pretest() {
   const navigate = useNavigate()
@@ -21,6 +27,7 @@ function Pretest() {
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [result, setResult] = useState(null)
   const [pretestDetail, setPretestDetail] = useState(null)
+  const detailFetched = useRef(false)
 
   const currentSoal = soals[currentIndex]
   const answeredCount = Object.keys(answers).length
@@ -32,6 +39,12 @@ function Pretest() {
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!status?.pretest_done || step !== 'start' || detailFetched.current) return
+    detailFetched.current = true
+    api.get('/pretest/detail').then((res) => setPretestDetail(res.data)).catch(() => {})
+  }, [status?.pretest_done, step])
 
   const startPretest = useCallback(async () => {
     try {
@@ -46,7 +59,7 @@ function Pretest() {
       setSecondsLeft(Number(data.durasi || 30) * 60)
       setStep('exam')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal memulai pretest', 'Tutup')
+      toast('error', e.response?.data?.message || 'Gagal memulai pretest')
     } finally {
       setLoading(false)
     }
@@ -64,9 +77,11 @@ function Pretest() {
     try {
       await api.post('/pretest/reset', { user_id: user.id })
       setStatus(prev => ({ ...prev, pretest_done: false }))
-      showSuccess('Berhasil', 'Pretest telah direset. Silakan ulangi.')
+      setPretestDetail(null)
+      detailFetched.current = false
+      toast('success', 'Berhasil mereset pretest')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal reset pretest', 'Tutup')
+      toast('error', e.response?.data?.message || 'Gagal reset pretest')
     }
   }, [user])
 
@@ -108,7 +123,7 @@ function Pretest() {
       setResult(res.data)
       setStep('result')
     } catch (e) {
-      showError('Gagal', e.response?.data?.message || 'Gagal submit pretest', 'Tutup')
+      toast('error', e.response?.data?.message || 'Gagal submit pretest')
     } finally {
       setSubmitting(false)
     }
@@ -165,8 +180,13 @@ function Pretest() {
               <CheckCircle className="h-8 w-8 text-white" />
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 mb-3">Pretest Selesai</span>
+            <div className="mb-2">
+              <p className="text-sm text-slate-400">Skor Total</p>
+              <p className="text-2xl font-bold text-slate-100">{pretestDetail?.rata_rata ?? '-'}</p>
+            </div>
             <h2 className="mt-3 text-2xl font-bold text-slate-100">Level Anda: {status?.level_name || '-'}</h2>
             <p className="mt-2 text-sm text-slate-400">Anda telah menyelesaikan pretest. Mulai pembelajaran sesuai level Anda.</p>
+            <div className="mt-6 text-left"><SkorKompetensi scores={pretestDetail?.kompetensi_scores} /></div>
             <div className="mt-8 flex justify-center gap-3">
               <button
                 onClick={() => window.location.href = '/pembelajaran/video'}
@@ -403,6 +423,10 @@ function Pretest() {
             <Trophy className="h-8 w-8 text-white" />
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-400 mb-3">Hasil Pretest</span>
+          <div className="mb-2">
+            <p className="text-sm text-slate-400">Skor Total</p>
+            <p className="text-2xl font-bold text-slate-100">{result.rata_rata ?? '-'}</p>
+          </div>
           <h2 className="mt-4 text-5xl font-bold text-slate-100">{result.level_name || '-'}</h2>
           <p className="mt-2 text-sm text-slate-400">Level awal Anda berdasarkan hasil pretest</p>
         </div>
@@ -456,10 +480,11 @@ function Pretest() {
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-400">Detail Pretest</span>
               <h1 className="mt-2 text-xl font-bold text-slate-100">Riwayat Jawaban</h1>
-              <p className="text-sm text-slate-400">{benarCount}/{pretestDetail.jawaban?.length ?? 0} benar | Rata-rata: {pretestDetail.rata_rata}</p>
+              <p className="text-sm text-slate-400">{benarCount}/{pretestDetail.jawaban?.length ?? 0} benar | Skor Total: {pretestDetail.rata_rata ?? '-'}</p>
             </div>
           </div>
         </div>
+        <SkorKompetensi scores={pretestDetail.kompetensi_scores} />
         {pretestDetail.jawaban?.map((j, i) => (
           <div key={j.soal_id} className={`rounded-2xl border p-6 shadow-sm ${j.benar ? 'border-emerald-500/20 bg-[#14141E]' : 'border-rose-500/20 bg-[#14141E]'}`}>
             <div className="flex items-start gap-3">

@@ -3,6 +3,7 @@ import { FileText, FileSpreadsheet, FileBarChart, Loader, ChevronDown } from 'lu
 import api from '../../api/axios'
 import { can } from '../../utils/can'
 import { useAuth } from '../../hooks/useAuth'
+import { toast } from '../../utils/toast'
 
 const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
 
@@ -18,7 +19,7 @@ function Laporan() {
     try {
       const res = await api.get(`/laporan/${type}`)
       setRows(normalize(res.data))
-    } catch (e) { alert(e.response?.data?.message || 'Gagal memuat laporan') } finally { setLoading(false) }
+    } catch (e) { toast('error', e.response?.data?.message || 'Gagal memuat laporan') } finally { setLoading(false) }
   }, [type])
 
   useEffect(() => { queueMicrotask(() => load()) }, [load])
@@ -38,9 +39,9 @@ function Laporan() {
       link.href = url; link.download = filename
       document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url)
     } catch (e) {
-      if (e.name === 'AbortError') { alert('Waktu permintaan habis. Coba lagi.') }
-      else if (e.response?.data instanceof Blob) { const text = await e.response.data.text(); try { const json = JSON.parse(text); alert(json.message || 'Gagal export laporan') } catch { alert(text || 'Gagal export laporan') } }
-      else { alert(e.response?.data?.message || e.message || 'Gagal export laporan') }
+      if (e.name === 'AbortError') { toast('error', 'Waktu permintaan habis. Coba lagi.') }
+      else if (e.response?.data instanceof Blob) { const text = await e.response.data.text(); try { const json = JSON.parse(text); toast('error', json.message || 'Gagal export laporan') } catch { toast('error', text || 'Gagal export laporan') } }
+      else { toast('error', e.response?.data?.message || e.message || 'Gagal export laporan') }
     } finally { setExporting(null) }
   }
 
