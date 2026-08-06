@@ -122,7 +122,8 @@ function Penilaian() {
     if (!jadwalForm.waktu_mulai) return
     setSaving(true)
     try {
-      await api.post(`/penilaian/wawancara/${jadwalModal.peserta_id}/jadwal`, jadwalForm)
+      const payload = { ...jadwalForm, waktu_mulai: new Date(jadwalForm.waktu_mulai).toISOString() }
+      await api.post(`/penilaian/wawancara/${jadwalModal.peserta_id}/jadwal`, payload)
       setJadwalModal(null)
       loadWawancara()
       load()
@@ -182,15 +183,17 @@ function Penilaian() {
   const sudahDinilai = filteredRows.filter(r => r.dinilai)
   const pesertaGroups = {}
   sudahDinilai.forEach(r => {
-    if (!pesertaGroups[r.peserta_id]) pesertaGroups[r.peserta_id] = { peserta_id: r.peserta_id, nama: r.peserta_nama, asesmen: r.asesmen, total: 0, graded: 0, lulus: r.lulus, wawancara_pending: r.wawancara_pending ?? (r.status === 'wawancara'), status: r.status }
+    if (!pesertaGroups[r.peserta_id]) pesertaGroups[r.peserta_id] = { peserta_id: r.peserta_id, nama: r.peserta_nama, asesmen: r.asesmen, total: 0, graded: 0, lulus: r.lulus, nilai_total: r.nilai_total, wawancara_pending: r.wawancara_pending ?? (r.status === 'wawancara'), status: r.status }
     pesertaGroups[r.peserta_id].wawancara_pending = r.wawancara_pending ?? (r.status === 'wawancara')
     pesertaGroups[r.peserta_id].status = r.status
+    if (r.nilai_total !== null && r.nilai_total !== undefined) pesertaGroups[r.peserta_id].nilai_total = r.nilai_total
     pesertaGroups[r.peserta_id].total++; pesertaGroups[r.peserta_id].graded++; if (r.lulus !== null) pesertaGroups[r.peserta_id].lulus = r.lulus
   })
   belumDinilai.forEach(r => {
-    if (!pesertaGroups[r.peserta_id]) pesertaGroups[r.peserta_id] = { peserta_id: r.peserta_id, nama: r.peserta_nama, asesmen: r.asesmen, total: 0, graded: 0, lulus: null, wawancara_pending: r.wawancara_pending ?? (r.status === 'wawancara'), status: r.status }
+    if (!pesertaGroups[r.peserta_id]) pesertaGroups[r.peserta_id] = { peserta_id: r.peserta_id, nama: r.peserta_nama, asesmen: r.asesmen, total: 0, graded: 0, lulus: null, nilai_total: r.nilai_total, wawancara_pending: r.wawancara_pending ?? (r.status === 'wawancara'), status: r.status }
     pesertaGroups[r.peserta_id].wawancara_pending = r.wawancara_pending ?? (r.status === 'wawancara')
     pesertaGroups[r.peserta_id].status = r.status
+    if (r.nilai_total !== null && r.nilai_total !== undefined) pesertaGroups[r.peserta_id].nilai_total = r.nilai_total
     pesertaGroups[r.peserta_id].total++
   })
   const siapVerifikasi = Object.values(pesertaGroups).filter(p => p.total === p.graded)
@@ -312,14 +315,14 @@ function Penilaian() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
-                    <thead className="text-xs uppercase tracking-wider text-slate-500"><tr className="border-b border-[#262636] bg-[#09090E]"><th className="px-5 py-3.5 font-semibold">Peserta</th><th className="px-5 py-3.5 font-semibold">Asesmen</th><th className="px-5 py-3.5 font-semibold text-center">Essay</th><th className="px-5 py-3.5 text-right font-semibold w-72">Aksi</th></tr></thead>
+                    <thead className="text-xs uppercase tracking-wider text-slate-500"><tr className="border-b border-[#262636] bg-[#09090E]"><th className="px-5 py-3.5 text-center font-semibold">Peserta</th><th className="px-5 py-3.5 text-center font-semibold">Asesmen</th><th className="px-5 py-3.5 text-center font-semibold">Essay</th><th className="px-5 py-3.5 text-center font-semibold">Nilai Total</th><th className="px-5 py-3.5 text-center font-semibold w-72">Aksi</th></tr></thead>
                     <tbody className="divide-y divide-[#262636]">
                       {siapVerifikasi.map((p) => {
                         const sudahDiVerifikasi = p.lulus !== null && p.lulus !== undefined
                         const wawancara = p.wawancara_pending === true || p.status === 'wawancara'
                         return <tr className="transition hover:bg-white/[0.02]" key={p.peserta_id}>
-                          <td className="px-5 py-4"><p className="font-medium text-slate-100">{p.nama}</p>{sudahDiVerifikasi && <p className={`mt-0.5 text-xs ${p.lulus ? 'text-emerald-400' : 'text-rose-400'}`}>{p.lulus ? '✅ Lulus' : '❌ Tidak Lulus'}</p>}</td><td className="px-5 py-4 text-slate-400">{p.asesmen}</td><td className="px-5 py-4 text-center"><span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400"><CheckCircle className="h-3 w-3" /> {p.graded}/{p.total}</span></td><td className="px-5 py-4 text-right">
-                            {!sudahDiVerifikasi && !wawancara ? <div className="flex justify-end gap-1.5"><button onClick={() => setJadwalModal({ peserta_id: p.peserta_id, nama: p.nama, asesmen: p.asesmen })} className="rounded-lg border border-amber-600/20 px-2.5 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/10"><MessageSquare className="inline-block h-3.5 w-3.5 -mt-0.5" /> Wawancara</button><button onClick={() => doApprove(p.peserta_id, p.nama)} className="rounded-lg border border-emerald-600/20 px-2.5 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/10"><ThumbsUp className="inline-block h-3.5 w-3.5 -mt-0.5" /> Approve</button><button onClick={() => doTolak(p.peserta_id, p.nama)} className="rounded-lg border border-rose-600/20 px-2.5 py-1.5 text-xs font-medium text-rose-400 transition hover:bg-rose-500/10"><ThumbsDown className="inline-block h-3.5 w-3.5 -mt-0.5" /> Tolak</button></div> : wawancara ? <div className="flex items-center justify-end gap-2"><span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-400">🟡 Wawancara dijadwalkan</span><span className="text-xs text-slate-500">Menunggu</span></div> : <span className="text-xs text-slate-500">Selesai</span>}
+                          <td className="px-5 py-4 text-center"><p className="font-medium text-slate-100">{p.nama}</p>{sudahDiVerifikasi && <p className={`mt-0.5 text-xs ${p.lulus ? 'text-emerald-400' : 'text-rose-400'}`}>{p.lulus ? '✅ Lulus' : '❌ Tidak Lulus'}</p>}</td><td className="px-5 py-4 text-center text-slate-400">{p.asesmen}</td><td className="px-5 py-4 text-center"><span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400"><CheckCircle className="h-3 w-3" /> {p.graded}/{p.total}</span></td><td className="px-5 py-4 text-center"><span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-400">{p.nilai_total ?? '-'}</span></td><td className="px-5 py-4 text-center">
+                            {!sudahDiVerifikasi && !wawancara ? <div className="flex items-center justify-center gap-1.5"><button onClick={() => setJadwalModal({ peserta_id: p.peserta_id, nama: p.nama, asesmen: p.asesmen })} className="rounded-lg border border-amber-600/20 px-2.5 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/10"><MessageSquare className="inline-block h-3.5 w-3.5 -mt-0.5" /> Wawancara</button><button onClick={() => doApprove(p.peserta_id, p.nama)} className="rounded-lg border border-emerald-600/20 px-2.5 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/10"><ThumbsUp className="inline-block h-3.5 w-3.5 -mt-0.5" /> Approve</button><button onClick={() => doTolak(p.peserta_id, p.nama)} className="rounded-lg border border-rose-600/20 px-2.5 py-1.5 text-xs font-medium text-rose-400 transition hover:bg-rose-500/10"><ThumbsDown className="inline-block h-3.5 w-3.5 -mt-0.5" /> Tolak</button></div> : wawancara ? <div className="flex items-center justify-center gap-2"><span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-400">🟡 Wawancara dijadwalkan</span><span className="text-xs text-slate-500">Menunggu</span></div> : <span className="text-xs text-slate-500">Selesai</span>}
                           </td></tr>
                       })}
                     </tbody>

@@ -236,23 +236,24 @@ function BankSoal() {
               <table className="w-full text-left text-xs">
                 <thead className="uppercase tracking-wider text-slate-500">
                   <tr className="border-b border-[#262636] bg-[#09090E]">
-                    <th className="px-3 py-2.5 font-semibold">Soal</th><th className="px-3 py-2.5 font-semibold">Kompetensi</th><th className="px-3 py-2.5 font-semibold hidden md:table-cell">Level</th><th className="px-3 py-2.5 font-semibold hidden md:table-cell">Jenis</th><th className="px-3 py-2.5 font-semibold hidden md:table-cell">Tipe</th><th className="px-3 py-2.5 font-semibold hidden lg:table-cell">Jawaban</th><th className="px-3 py-2.5 font-semibold text-center w-14">Bobot</th><th className="px-3 py-2.5 font-semibold w-16">Status</th><th className="px-3 py-2.5 text-left font-semibold w-24 translate-x-[20px]">Aksi</th>
+                    <th className="px-3 py-2.5 text-center font-semibold">Soal</th><th className="px-3 py-2.5 text-center font-semibold">Kompetensi</th><th className="px-3 py-2.5 text-center font-semibold hidden md:table-cell">Level</th><th className="px-3 py-2.5 text-center font-semibold hidden md:table-cell">Jenis</th><th className="px-3 py-2.5 text-center font-semibold hidden md:table-cell">Tipe</th><th className="px-3 py-2.5 text-center font-semibold hidden lg:table-cell">Jawaban</th><th className="px-3 py-2.5 text-center font-semibold w-14">Bobot</th><th className="px-3 py-2.5 text-center font-semibold w-16">Status</th><th className="px-3 py-2.5 text-center font-semibold w-24">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#262636]">
                   {rows.map((row) => (
                     <tr className="transition hover:bg-white/[0.02]" key={row.id}>
-                      <td className="px-3 py-2.5 max-w-xs"><p className="truncate font-medium text-slate-100 text-xs" title={row.pertanyaan}>{row.pertanyaan}</p></td>
-                      <td className="px-3 py-2.5 text-slate-400 w-28 truncate text-xs">{row.kompetensi?.nama || '-'}</td>
-                      <td className="px-3 py-2.5 text-slate-400 hidden md:table-cell w-20 text-xs">{row.level?.nama || '-'}</td>
-                      <td className="px-3 py-2.5 hidden md:table-cell"><span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-indigo-400 bg-indigo-500/10">{row.jenis === 'pilihan_ganda' ? 'PG' : 'Essay'}</span></td>
-                      <td className="px-3 py-2.5 hidden md:table-cell"><div className="flex gap-1 flex-wrap">{(Array.isArray(row.tipe) ? row.tipe : ['quiz']).map(t => <span key={t} className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${t === 'quiz' ? 'bg-sky-500/10 text-sky-400' : t === 'pretest' ? 'bg-amber-500/10 text-amber-400' : 'bg-violet-500/10 text-violet-400'}`}>{t}</span>)}</div></td>
-                      <td className="px-3 py-2.5 text-slate-300 hidden lg:table-cell max-w-[100px] truncate text-xs">{row.jawaban_benar || '-'}</td>
+                      <td className="px-3 py-2.5 text-center max-w-xs"><p className="truncate font-medium text-slate-100 text-xs" title={row.pertanyaan}>{row.pertanyaan}</p></td>
+                      <td className="px-3 py-2.5 text-center text-slate-400 w-28 truncate text-xs">{row.kompetensi?.nama || '-'}</td>
+                      <td className="px-3 py-2.5 text-center text-slate-400 hidden md:table-cell w-20 text-xs">{row.level?.nama || '-'}</td>
+                      <td className="px-3 py-2.5 text-center hidden md:table-cell"><span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-indigo-400 bg-indigo-500/10">{row.jenis === 'pilihan_ganda' ? 'PG' : 'Essay'}</span></td>
+                      <td className="px-3 py-2.5 text-center hidden md:table-cell"><div className="flex justify-center gap-1 flex-wrap">{(Array.isArray(row.tipe) ? row.tipe : ['quiz']).map(t => <span key={t} className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${t === 'quiz' ? 'bg-sky-500/10 text-sky-400' : t === 'pretest' ? 'bg-amber-500/10 text-amber-400' : 'bg-violet-500/10 text-violet-400'}`}>{t}</span>)}</div></td>
+                      <td className="px-3 py-2.5 text-center text-slate-300 hidden lg:table-cell max-w-[100px] truncate text-xs">{row.jawaban_benar || '-'}</td>
                       <td className="px-3 py-2.5 text-center text-slate-300 text-xs">{row.bobot}</td>
-                      <td className="px-3 py-2.5"><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${row.is_active ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-400/20' : 'bg-slate-500/10 text-slate-400 ring-slate-400/20'}`}>{row.is_active ? 'Aktif' : '-'}</span></td>
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                        {can(user, 'bank-soal.update') && <button onClick={() => openEdit(row)} className="mr-1.5 inline-flex items-center justify-center rounded-lg border border-[#262636] p-1.5 text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>}
+                      <td className="px-3 py-2.5 text-center"><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${row.is_active ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-400/20' : 'bg-slate-500/10 text-slate-400 ring-slate-400/20'}`}>{row.is_active ? 'Aktif' : '-'}</span></td>
+                      <td className="px-3 py-2.5 text-center whitespace-nowrap"><div className="flex items-center justify-center gap-2">
+                        {can(user, 'bank-soal.update') && <button onClick={() => openEdit(row)} className="inline-flex items-center justify-center rounded-lg border border-[#262636] p-1.5 text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>}
                         {can(user, 'bank-soal.delete') && <button onClick={() => remove(row)} className="inline-flex items-center justify-center rounded-lg border border-rose-600/20 p-1.5 text-rose-400 transition-colors hover:bg-rose-500/10" title="Hapus"><Trash2 className="h-3.5 w-3.5" /></button>}
+                      </div>
                       </td>
                     </tr>
                   ))}

@@ -21,6 +21,12 @@ class DashboardController extends Controller
     {
         $totalWalidata = Walidata::count();
         $sertifiedUsers = Sertifikat::distinct('user_id')->count('user_id');
+        $lastPesertaIds = PesertaAsesmen::whereIn('status', ['selesai', 'dinilai', 'menunggu_dinilai', 'wawancara'])
+            ->whereNotNull('nilai')
+            ->latest('id')
+            ->get()
+            ->unique('user_id')
+            ->pluck('id');
 
         return response()->json([
             'totals' => [
@@ -49,13 +55,13 @@ class DashboardController extends Controller
                 ->limit(10)
                 ->get()
                 ->map(fn (Opd $opd) => ['label' => $opd->singkatan ?: $opd->nama, 'value' => $opd->walidatas_count]),
-            'top_walidata' => Walidata::query()
+            'top_walidata' => PesertaAsesmen::whereIn('id', $lastPesertaIds)
                 ->with('user')
-                ->where('nilai_kompetensi', '>', 0)
-                ->orderByDesc('nilai_kompetensi')
+                ->whereHas('user', fn ($q) => $q->whereHas('walidata'))
+                ->orderByDesc('nilai')
                 ->limit(10)
                 ->get()
-                ->map(fn (Walidata $w) => ['label' => $w->user?->name ?: 'Walidata', 'value' => (float) $w->nilai_kompetensi]),
+                ->map(fn (PesertaAsesmen $p) => ['label' => $p->user?->name ?: 'Walidata', 'value' => (float) $p->nilai]),
             'kompetensi_scores' => NilaiKompetensi::query()
                 ->selectRaw('kompetensi_id, ROUND(AVG(nilai)) as value')
                 ->with('kompetensi')
@@ -90,16 +96,20 @@ class DashboardController extends Controller
                     'total' => MateriProgress::whereIn('user_id', $walidataIds)->count(),
                 ];
             })(),
-            'kompetensi_map' => Opd::query()
-                ->withCount('walidatas')
-                ->withAvg('walidatas', 'nilai_kompetensi')
-                ->orderByDesc('walidatas_count')
+            'kompetensi_map' => DB::table('nilai_kompetensis')
+                ->join('walidatas', 'walidatas.user_id', '=', 'nilai_kompetensis.user_id')
+                ->join('opds', 'opds.id', '=', 'walidatas.opd_id')
+                ->whereNull('walidatas.deleted_at')
+                ->selectRaw('opds.id, COALESCE(opds.singkatan, opds.nama) as opd, COUNT(DISTINCT walidatas.user_id) as walidata, ROUND(AVG(nilai_kompetensis.nilai)) as nilai')
+                ->groupBy('opds.id', 'opd')
+                ->orderByDesc('walidata')
+                ->orderByDesc('nilai')
                 ->limit(20)
                 ->get()
-                ->map(fn (Opd $opd) => [
-                    'opd' => $opd->singkatan ?: $opd->nama,
-                    'walidata' => $opd->walidatas_count,
-                    'nilai' => (int) round((float) ($opd->walidatas_avg_nilai_kompetensi ?? 0)),
+                ->map(fn ($row) => [
+                    'opd' => $row->opd,
+                    'walidata' => (int) $row->walidata,
+                    'nilai' => (int) $row->nilai,
                 ]),
         ]);
     }

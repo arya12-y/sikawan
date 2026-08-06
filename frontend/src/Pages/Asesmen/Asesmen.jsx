@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { AlertCircle as AlertCircleIcon, ClipboardCheck, Clock, Award, BookOpen, Plus, X, Pencil, Trash2, XCircle } from 'lucide-react'
+import { AlertCircle as AlertCircleIcon, ClipboardCheck, ClipboardEdit, Clock, Award, BookOpen, Plus, X, Pencil, Trash2, XCircle, MessageSquare } from 'lucide-react'
 import api from '../../api/axios'
 import { confirmDelete } from '../../utils/confirm'
 import { showWarning, showConfirm } from '../../utils/alert'
@@ -36,6 +36,7 @@ function Asesmen() {
   const [kompetensiScores, setKompetensiScores] = useState([])
   const [selectedKompetensi, setSelectedKompetensi] = useState([])
   const [submitted, setSubmitted] = useState(false)
+  const [simulasiResult, setSimulasiResult] = useState(null)
   const [resetRequest, setResetRequest] = useState(null)
   const [resetLoading, setResetLoading] = useState(false)
   const [kompetensiMap, setKompetensiMap] = useState({})
@@ -93,8 +94,29 @@ function Asesmen() {
   }, [user])
   useEffect(() => { queueMicrotask(() => load()) }, [load])
 
+  const submitSimulasi = async (auto = false) => {
+    if (!auto) {
+      const belumDijawab = questions.filter(s => !String(answers[s.id] || '').trim())
+      if (belumDijawab.length > 0) {
+        await showConfirm('Soal Belum Dijawab', `Ada ${belumDijawab.length} soal yang masih kosong. Jawab terlebih dahulu.`, 'Oke', 'Cancel', 'warning')
+        return
+      }
+      if (!await showConfirm('Kumpulkan simulasi?', 'Hasil simulasi tidak akan disimpan di sistem.', 'Ya, kumpulkan', 'Batal', 'question')) return
+    }
+    try {
+      const id = peserta.asesmen?.id || peserta.asesmen_id
+      const res = await api.post(`/asesmens/${id}/submit-simulasi`, { jawaban: answers })
+      setSimulasiResult(res.data)
+      setSecondsLeft(0)
+      toast('success', 'Simulasi asesmen berhasil dikumpulkan')
+    } catch (e) {
+      toast('error', e.response?.data?.message || 'Gagal submit simulasi asesmen')
+    }
+  }
+
   const submitExam = async (auto = false) => {
     if (peserta?.status === 'trial') { setPeserta(null); setActiveTab('list'); return }
+    if (peserta?.status === 'simulasi') { await submitSimulasi(auto); return }
     if (!auto) {
       const belumDijawab = questions.filter(s =>
         !s.jenis || !String(answers[s.id] || '').trim()
@@ -235,6 +257,47 @@ const mintaReset = async () => {
 
   // Status: Menunggu dinilai oleh penguji
   const waiting = submitted || menungguDinilai || asesmenStatus === 'menunggu_dinilai' || asesmenStatus === 'wawancara' || (asesmenStatus === 'selesai' && asesmenLulus === null)
+  if (ready && isWalidata && waiting && (asesmenStatus === 'wawancara' || wawancaraPending)) {
+    const metode = wawancara?.metode === 'tatap_muka' ? 'Tatap Muka' : wawancara?.metode === 'online' ? 'Online' : '-'
+    const waktuMulai = wawancara?.waktu_mulai
+
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] border-b-amber-500/40 bg-[#14141E] p-8 text-center shadow-lg shadow-black/10">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30">
+            <MessageSquare className="h-8 w-8 text-white" />
+          </div>
+          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400">Wawancara Dijadwalkan</span>
+          <h2 className="mt-3 text-2xl font-bold text-slate-100">Anda Dijadwalkan Wawancara</h2>
+          <div className="mx-auto mt-6 grid gap-6 rounded-xl border border-[#262636] bg-[#1A1A26] p-4 text-left sm:grid-cols-4">
+            <div className="text-center">
+              <p className="text-xs text-slate-500">Tanggal</p>
+              <p className="mt-1 text-sm font-medium text-slate-200">{waktuMulai ? new Date(waktuMulai).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-slate-500">Waktu</p>
+              <p className="mt-1 text-sm font-medium text-slate-200">{waktuMulai ? new Date(waktuMulai).toLocaleTimeString('id-ID', { timeStyle: 'short' }) : 'Waktu akan diinformasikan.'}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-slate-500">Metode</p>
+              <p className="mt-1 text-sm font-medium text-slate-200">{metode}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-slate-500">Durasi</p>
+              <p className="mt-1 text-sm font-medium text-slate-200">{wawancara?.durasi_menit ? `${wawancara.durasi_menit} menit` : '-'}</p>
+            </div>
+          </div>
+          {wawancara?.catatan_jadwal && (
+            <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-left">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-400">Catatan Penguji</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">{wawancara.catatan_jadwal}</p>
+            </div>
+          )}
+          <p className="mt-6 text-sm text-slate-500">Wawancara akan dilakukan oleh penguji. Siapkan diri Anda.</p>
+        </div>
+      </div>
+    )
+  }
   if (ready && isWalidata && waiting) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
@@ -330,6 +393,23 @@ const mintaReset = async () => {
     )
   }
 
+  if (peserta?.status === 'simulasi' && simulasiResult) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="relative overflow-hidden rounded-2xl border border-[#1E1E2E] bg-[#14141E] p-8 text-center shadow-lg shadow-black/10">
+          <span className="inline-flex rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400">MODE SIMULASI</span>
+          <p className="mt-2 text-xs text-slate-500">Hasil simulasi — tidak disimpan di sistem</p>
+          <p className="mt-6 text-sm text-slate-400">Nilai</p><p className="text-5xl font-bold text-slate-100">{simulasiResult.nilai ?? '-'}</p>
+          <span className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${simulasiResult.lulus ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>{simulasiResult.lulus ? 'Lulus' : 'Tidak Lulus'}</span>
+        </div>
+        <div className="rounded-2xl border border-[#1E1E2E] bg-[#14141E] p-7 shadow-sm"><h3 className="mb-5 text-base font-bold text-slate-100">Hasil per Soal</h3><div className="space-y-4">
+          {(simulasiResult.per_soal || []).map((item, index) => <div key={item.bank_soal_id || index} className="rounded-xl border border-[#262636] p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm leading-6 text-slate-100"><span className="mr-2 text-xs font-bold text-indigo-400">{String(index + 1).padStart(2, '0')}</span>{item.pertanyaan}</p><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_benar ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>{item.is_benar ? 'Benar' : 'Salah'}</span></div><p className="mt-3 text-xs text-slate-500">Jawaban Anda: <strong className={item.is_benar ? 'text-emerald-400' : 'text-rose-400'}>{item.jawaban_user || '(kosong)'}</strong></p>{item.pembahasan && <details className="mt-2"><summary className="cursor-pointer text-xs text-slate-500">Pembahasan</summary><p className="mt-1 text-xs text-slate-400">{item.pembahasan}</p></details>}</div>)}
+        </div></div>
+        <div className="flex justify-center pb-4"><button onClick={() => { setSimulasiResult(null); setPeserta(null); setActiveTab('list') }} className="rounded-full border border-[#262636] px-6 py-2.5 text-sm font-medium text-slate-300 transition hover:border-indigo-500/30 hover:text-indigo-400">Tutup</button></div>
+      </div>
+    )
+  }
+
   // Status: Belum waktunya exam
   if (ready && examLocked) {
     return (
@@ -382,25 +462,26 @@ const mintaReset = async () => {
             ) : asesmens.length === 0 ? (
               <div className="flex flex-col items-center py-16 text-slate-500"><ClipboardCheck className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada asesmen</p></div>
             ) : (
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-500">
                   <tr className="border-b border-[#262636] bg-[#09090E]">
-                    <th className="px-4 py-3 font-semibold">Judul</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Kompetensi</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 font-semibold text-center w-16">Soal</th><th className="px-4 py-3 font-semibold w-20">Durasi</th><th className="px-4 py-3 font-semibold w-20">Status</th><th className="px-4 py-3 text-right font-semibold w-32 -translate-x-[25px]">Aksi</th>
+                    <th className="px-4 py-3 text-center font-semibold">Judul</th><th className="px-4 py-3 text-center font-semibold hidden md:table-cell">Kompetensi</th><th className="px-4 py-3 text-center font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 text-center font-semibold">Soal</th><th className="px-4 py-3 text-center font-semibold">Durasi</th><th className="px-4 py-3 text-center font-semibold">Nilai Lulus</th><th className="px-4 py-3 text-center font-semibold">Status</th><th className="px-4 py-3 text-center font-semibold">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#262636]">
                   {asesmens.map((row) => (
                     <tr className="transition hover:bg-white/[0.02]" key={row.id}>
-                      <td className="px-4 py-3"><p className="font-medium text-slate-100">{row.judul}</p><p className="text-xs text-slate-500 mt-0.5">Nilai lulus {row.nilai_lulus}</p></td>
-                      <td className="px-4 py-3 text-slate-400 hidden md:table-cell">{(row.kompetensi_ids || []).length > 1 ? `${(row.kompetensi_ids || []).length} kompetensi` : (row.kompetensi?.nama || getName(kompetensis, row.kompetensi_id || row.kompetensi_ids?.[0]))}</td>
-                      <td className="px-4 py-3 text-slate-400 hidden md:table-cell">{row.level?.nama || getName(levels, row.level_id)}</td>
-                      <td className="px-4 py-3 text-center text-slate-300">{row.jumlah_soal}</td>
-                      <td className="px-4 py-3 text-slate-400">{row.durasi} menit</td>
-                      <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${statusStyle(row.status)}`}>{row.status}</span></td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        {can(user, 'asesmen.update') && <button onClick={() => openEdit(row)} className="mr-2 inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-4 w-4" /></button>}{can(user, 'asesmen.delete') && <button onClick={() => remove(row)} className="inline-flex items-center justify-center rounded-xl border border-rose-600/20 p-2 text-sm text-rose-400 transition-colors hover:bg-rose-500/10" title="Hapus"><Trash2 className="h-4 w-4" /></button>}
-                        {can(user, 'asesmen.start') && <button className="rounded-lg px-3 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition disabled:opacity-40 ml-1" disabled={loading || !['published', 'ongoing'].includes(row.status)} onClick={() => startExam(row)}>{loading ? '...' : 'Mulai'}</button>}
-                      </td>
+                      <td className="px-4 py-3 text-center"><p className="font-medium text-slate-100">{row.judul}</p>{row.deskripsi && <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{row.deskripsi}</p>}</td>
+                      <td className="px-4 py-3 text-center text-indigo-400 hidden md:table-cell">{(row.kompetensi_ids || []).length > 1 ? `${(row.kompetensi_ids || []).length} kompetensi` : (row.kompetensi?.nama || getName(kompetensis, row.kompetensi_id || row.kompetensi_ids?.[0]))}</td>
+                      <td className="px-4 py-3 text-center hidden md:table-cell"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${row.level_id ? 'bg-sky-500/10 text-sky-400' : 'bg-slate-500/10 text-slate-400'}`}>{row.level_id ? (row.level?.nama || getName(levels, row.level_id)) : 'Semua Level'}</span></td>
+                      <td className="px-4 py-3 text-center text-slate-100 font-semibold">{row.jumlah_soal}</td>
+                      <td className="px-4 py-3 text-center"><span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400">{row.durasi} menit</span></td>
+                      <td className="px-4 py-3 text-center"><span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400">{row.nilai_lulus}</span></td>
+                      <td className="px-4 py-3 text-center"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${statusStyle(row.status)}`}>{row.status}</span></td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap"><div className="flex items-center justify-center gap-2">
+                        {can(user, 'asesmen.update') && <button onClick={() => openEdit(row)} className="inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>}{can(user, 'asesmen.delete') && <button onClick={() => remove(row)} className="inline-flex items-center justify-center rounded-xl border border-rose-600/20 p-2 text-sm text-rose-400 transition-colors hover:bg-rose-500/10" title="Hapus"><Trash2 className="h-3.5 w-3.5" /></button>}
+                        {can(user, 'asesmen.start') && <button className="inline-flex items-center justify-center rounded-xl border border-emerald-600/20 p-2 text-emerald-400 transition-colors hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-40" disabled={loading || !['published', 'ongoing'].includes(row.status)} onClick={() => startExam(row)} title="Mulai">{loading ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" /> : <ClipboardEdit className="h-3.5 w-3.5" />}</button>}
+                      </div></td>
                     </tr>
                   ))}
                 </tbody>

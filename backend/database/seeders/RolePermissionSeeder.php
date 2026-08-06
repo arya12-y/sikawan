@@ -26,6 +26,7 @@ class RolePermissionSeeder extends Seeder
 
         $permissions = [
             'dashboard.view',
+            'master-data.view',
             'opd.view', 'opd.create', 'opd.update', 'opd.delete',
             'bidang.view', 'bidang.create', 'bidang.update', 'bidang.delete',
             'jabatan.view', 'jabatan.create', 'jabatan.update', 'jabatan.delete',
@@ -39,7 +40,7 @@ class RolePermissionSeeder extends Seeder
             'pengguna.view', 'pengguna.create', 'pengguna.update', 'pengguna.delete',
             'bank-soal.view', 'bank-soal.create', 'bank-soal.update', 'bank-soal.delete', 'bank-soal.import', 'bank-soal.export',
             'quiz.view', 'quiz.create', 'quiz.update', 'quiz.delete', 'quiz.start',
-            'asesmen.view', 'asesmen.create', 'asesmen.update', 'asesmen.delete', 'asesmen.start',
+            'asesmen.view', 'asesmen.create', 'asesmen.update', 'asesmen.delete', 'asesmen.start', 'asesmen.simulasi',
             'penilaian.view', 'penilaian.grade',
             'sertifikat.view', 'sertifikat.create', 'sertifikat.download', 'sertifikat.print',
             'monitoring.view',
@@ -48,6 +49,7 @@ class RolePermissionSeeder extends Seeder
             'notifikasi.view', 'notifikasi.create', 'notifikasi.update', 'notifikasi.delete',
             'pretest.view', 'pretest.start', 'pretest.submit', 'pretest.reset',
             'jadwal.view', 'jadwal.create', 'jadwal.update', 'jadwal.delete',
+            'jadwal.bebas',
             'profile.update',
             'password.change',
             'session.manage',
@@ -90,8 +92,8 @@ class RolePermissionSeeder extends Seeder
                 'penilaian.view', 'penilaian.grade',
                 // Monitoring - pantau peserta
                 'monitoring.view',
-                // Referensi saat buat soal
-                'materi.view', 'kompetensi.view', 'level.view',
+                // Referensi saat buat soal (kompetensi & level saja, materi tidak perlu)
+                'kompetensi.view', 'level.view',
                 // Profil sendiri
                 'profile.update', 'password.change',
             ],

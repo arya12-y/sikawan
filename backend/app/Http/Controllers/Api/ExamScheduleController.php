@@ -126,13 +126,14 @@ class ExamScheduleController extends Controller
         $walidataIds = \App\Models\User::role('Walidata')->pluck('id');
         $totalUsers = $walidataIds->count();
 
+        // Pretest dihitung dari keberadaan record (konsisten dengan myStatus),
+        // bukan filter window yang ketat — hasil pretest bisa jatuh di luar window jadwal
         $pretestSelesai = \App\Models\PretestResult::whereIn('user_id', $walidataIds)
-            ->where('completed_at', '>=', $schedule->pretest_start)
-            ->where('completed_at', '<=', $schedule->pretest_end)
             ->distinct('user_id')->count('user_id');
 
+        // Asesmen selesai = hanya status 'selesai' (menunggu_dinilai/dinilai/wawancara belum selesai)
         $asesmenSelesai = \App\Models\PesertaAsesmen::whereIn('user_id', $walidataIds)
-            ->whereIn('status', ['selesai', 'dinilai', 'menunggu_dinilai', 'wawancara'])
+            ->where('status', 'selesai')
             ->where('created_at', '>=', $schedule->exam_start)
             ->where('created_at', '<=', $schedule->exam_end)
             ->distinct('user_id')->count('user_id');
@@ -149,12 +150,19 @@ class ExamScheduleController extends Controller
             ->where('created_at', '<=', $schedule->exam_end)
             ->distinct('user_id')->count('user_id');
 
+        $menungguDinilai = \App\Models\PesertaAsesmen::whereIn('user_id', $walidataIds)
+            ->where('status', 'menunggu_dinilai')
+            ->where('created_at', '>=', $schedule->exam_start)
+            ->where('created_at', '<=', $schedule->exam_end)
+            ->distinct('user_id')->count('user_id');
+
         return response()->json([
             'total_walidata' => $totalUsers,
             'pretest_selesai' => $pretestSelesai,
             'sedang_asesmen' => $sedangAsesmen,
+            'menunggu_dinilai' => $menungguDinilai,
             'asesmen_selesai' => $asesmenSelesai,
-            'lulus' => (bool) $lulus,
+            'lulus' => $lulus,
             'belum_pretest' => max(0, $totalUsers - $pretestSelesai),
             'active' => true,
             'schedule_title' => $schedule->title,

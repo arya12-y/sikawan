@@ -14,7 +14,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolePermissionSeeder::class,
             MasterDataSeeder::class,
-            TrainingDataSeeder::class,
+            // TrainingDataSeeder dinonaktifkan: menulis nilai kompetensi acak (kategori "Seed Data")
+            // yang mengotori dashboard. Data harus real dari asesmen.
             TestDataSeeder::class,
         ]);
     }

@@ -145,7 +145,7 @@
                 Telah menyelesaikan asesmen kompetensi dan dinyatakan <strong>LULUS</strong>
                 dengan nilai <strong>{{ $sertifikat->nilai_akhir }}</strong>
                 pada kompetensi <strong>{{ $sertifikat->kompetensi?->nama ?? '-' }}</strong>
-                level <strong>{{ $sertifikat->level?->nama ?? '-' }}</strong>.
+                level <strong>{{ $sertifikat->level?->nama ?? $sertifikat->kategori_kompetensi ?? '-' }}</strong>.
             </div>
 
             <div class="info">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Plus, X, Trash2, UserCheck, FileCheck, ClipboardCheck, Award, Play } from 'lucide-react'
+import { Calendar, Plus, X, Trash2, UserCheck, FileCheck, ClipboardCheck, Award, Play, Clock } from 'lucide-react'
 import api from '../../api/axios'
 import { useAuth } from '../../hooks/useAuth'
 import { can } from '../../utils/can'
@@ -182,18 +182,19 @@ function ExamSchedules() {
         <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-6 text-center text-sm text-slate-500">Tidak ada data untuk jadwal ini.</div>
       )}
       {stats && stats.active && (
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
           {[
             { label: 'Total Walidata', value: stats.total_walidata, icon: UserCheck, color: 'from-indigo-600 to-indigo-800' },
             { label: 'Belum Pretest', value: stats.belum_pretest, icon: Play, color: 'from-amber-600 to-amber-800' },
             { label: 'Pretest Selesai', value: stats.pretest_selesai, icon: FileCheck, color: 'from-sky-600 to-cyan-800' },
             { label: 'Sedang Asesmen', value: stats.sedang_asesmen, icon: ClipboardCheck, color: 'from-violet-600 to-purple-800' },
+            { label: 'Menunggu Dinilai', value: stats.menunggu_dinilai, icon: Clock, color: 'from-amber-500 to-orange-600' },
             { label: 'Asesmen Selesai', value: stats.asesmen_selesai, icon: Award, color: 'from-emerald-600 to-emerald-800' },
             { label: 'Lulus', value: stats.lulus, icon: Award, color: 'from-cyan-600 to-teal-800' },
           ].map((s) => (
             <div key={s.label} className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${s.color} p-4 shadow-lg`}>
               <s.icon className="absolute right-2 top-2 h-8 w-8 text-white/10" />
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/70">{s.label}</p>
+              <p className="min-h-[28px] text-[10px] font-semibold uppercase leading-4 tracking-wider text-white/70">{s.label}</p>
               <p className="mt-1 text-2xl font-bold text-white">{s.value}</p>
             </div>
           ))}

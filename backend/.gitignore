@@ -18,6 +18,11 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+# Artefak build frontend (copy hasil npm run build) — clone jalankan build sendiri
+/public/index.html
+/public/assets/
+/public/favicon.svg
+/public/icons.svg
 /storage/*.key
 /storage/pail
 /vendor

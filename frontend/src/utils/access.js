@@ -27,15 +27,32 @@ const permissionModulePaths = [
 
 const masterDataPaths = ['/master-data', '/opd', '/bidang', '/jabatan', '/kompetensi', '/level', '/badge', '/kategori', '/walidata', '/penguji', '/users', '/roles']
 
+// Master data sensitif — hanya admin yang boleh akses
+const adminOnlyMasterPaths = ['/walidata', '/penguji', '/users', '/roles']
+
+// Halaman master data yang bisa dibuka role non-admin bila punya master-data.view
+const masterDataGatePaths = ['/master-data', '/opd', '/bidang', '/jabatan', '/kompetensi', '/level', '/badge', '/kategori']
+
 function isAdminRole(user) {
   const roles = Array.isArray(user?.roles) ? user.roles : []
   return roles.some((role) => ['Super Admin', 'Admin Diskominfo'].includes(role))
 }
 
+export function hasJadwalBebas(user) {
+  if (!user) return false
+  if (isAdminRole(user)) return true
+  const perms = Array.isArray(user?.permissions) ? user.permissions : []
+  return perms.includes('jadwal.bebas')
+}
+
+// Flag permission yang memberi perilaku (bypass lock), bukan akses modul/menu
+const FLAG_PERMISSIONS = new Set(['jadwal.bebas'])
+
 function getUserPermModules(user) {
   const perms = Array.isArray(user?.permissions) ? user.permissions : []
   const modules = new Set()
   for (const perm of perms) {
+    if (FLAG_PERMISSIONS.has(perm)) continue
     const [module] = perm.split('.')
     if (module) modules.add(module)
   }
@@ -52,7 +69,12 @@ export const canAccessPath = (user, path) => {
   }
   
   if (roles.includes('Super Admin')) return true
-  if (!isAdminRole(user) && masterDataPaths.includes(path)) return false
+  if (!isAdminRole(user)) {
+    // Master data sensitif: hanya admin
+    if (adminOnlyMasterPaths.includes(path)) return false
+    // Halaman master data lain: butuh master-data.view sebagai pintu
+    if (masterDataGatePaths.includes(path) && !perms.includes('master-data.view')) return false
+  }
 
   const modules = getUserPermModules(user)
   for (const entry of permissionModulePaths) {
@@ -89,7 +111,7 @@ function countdownLabel(dateStr) {
 }
 
 export function getMenuLock(path, phase, pretestDone, schedule, user, lulus = false, asesmenStatus = null, allAsesmenDone = false, asesmenLulus = null, wawancaraPending = false, menungguDinilai = false) {
-  if (!isWalidataRole(user)) return { locked: false, message: '' }
+  if (!isWalidataRole(user) || hasJadwalBebas(user)) return { locked: false, message: '' }
   if (!phase) return { locked: true, message: '' }
   if (phase === 'none') return { locked: true, message: 'Belum ada jadwal' }
 

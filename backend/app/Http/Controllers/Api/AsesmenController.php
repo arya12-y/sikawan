@@ -122,12 +122,12 @@ class AsesmenController extends CrudController
             $asesmen->bankSoals()->sync($soalIds->mapWithKeys(fn ($soalId, $i) => [$soalId => ['urutan' => $i + 1]])->all());
         }
 
-        // Non-Walidata: trial mode — liat soal doang, gak bikin record
+        // Non-Walidata: trial/simulasi mode — tidak membuat record peserta
         if (!$request->user()->hasRole('Walidata')) {
             $asesmen->load(['bankSoals' => fn ($q) => $asesmen->acak_soal ? $q->inRandomOrder() : $q->orderBy('asesmen_soals.urutan')]);
             return response()->json([
                 'id' => null, 'asesmen' => $asesmen, 'jawaban_pesertas' => [],
-                'status' => 'trial', 'waktu_mulai' => now(),
+                'status' => $request->user()->hasPermissionTo('asesmen.simulasi', 'sanctum') ? 'simulasi' : 'trial', 'waktu_mulai' => now(),
             ]);
         }
 
@@ -142,6 +142,49 @@ class AsesmenController extends CrudController
         $peserta->load(['asesmen.bankSoals' => fn ($query) => $asesmen->acak_soal ? $query->inRandomOrder() : $query->orderBy('asesmen_soals.urutan'), 'jawabanPesertas']);
 
         return response()->json($peserta);
+    }
+
+    public function submitSimulasi(Request $request, AssessmentService $service, $id)
+    {
+        abort_unless($request->user()->hasPermissionTo('asesmen.simulasi', 'sanctum'), 403);
+
+        $data = $request->validate([
+            'jawaban' => ['required', 'array'],
+            'jawaban.*' => ['nullable', 'string'],
+        ]);
+
+        $asesmen = Asesmen::with('bankSoals')->findOrFail($id);
+        abort_unless(in_array($asesmen->status, ['published', 'ongoing'], true), 422, 'Asesmen belum tersedia');
+
+        $jawaban = $data['jawaban'];
+        $totalBobot = (float) $asesmen->bankSoals->sum(fn ($soal) => (float) $soal->bobot);
+        $totalNilaiPG = 0;
+        $perSoal = [];
+
+        foreach ($asesmen->bankSoals as $soal) {
+            $jawabanUser = $jawaban[$soal->id] ?? null;
+            $score = $service->calculateAnswerScore($soal, $jawabanUser);
+            if ($soal->jenis === 'pilihan_ganda') {
+                $totalNilaiPG += (float) $score['nilai'];
+            }
+            $perSoal[] = [
+                'bank_soal_id' => $soal->id,
+                'pertanyaan' => $soal->pertanyaan,
+                'jawaban_user' => $jawabanUser,
+                'is_benar' => $score['is_benar'],
+                'nilai' => $score['nilai'],
+                'pembahasan' => $soal->pembahasan,
+            ];
+        }
+
+        $nilai = $totalBobot > 0 ? round(($totalNilaiPG / $totalBobot) * 100) : 0;
+
+        return response()->json([
+            'message' => 'Simulasi selesai',
+            'nilai' => $nilai,
+            'lulus' => $nilai >= 70,
+            'per_soal' => $perSoal,
+        ]);
     }
 
     public function mintaReset(Request $request)
@@ -224,7 +267,7 @@ class AsesmenController extends CrudController
 
             // Tanpa soal essay → tidak perlu dinilai penguji, auto-grade langsung
             if ($essayIds->isEmpty()) {
-                $lulus = $nilaiSementara >= 70;
+                $lulus = $nilaiSementara >= (float) ($peserta->asesmen->nilai_lulus ?? 70);
                 $peserta->update([
                     'status' => 'selesai',
                     'lulus' => $lulus,
@@ -240,7 +283,7 @@ class AsesmenController extends CrudController
                         [
                             'nomor_sertifikat' => 'SKW-'.now()->format('Ymd').'-\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6))',
                             'kompetensi_id' => $peserta->asesmen?->kompetensi_id,
-                            'level_id' => $peserta->asesmen?->level_id,
+                            'level_id' => \App\Models\Walidata::where('user_id', $peserta->user_id)->value('level_id'),
                             'nilai_akhir' => $nilaiSementara,
                             'kategori_kompetensi' => $service->kategori((float) $nilaiSementara),
                             'tanggal_terbit' => now(),
@@ -267,7 +310,16 @@ class AsesmenController extends CrudController
 
         foreach ($grouped as $kompetensiId => $jawabans) {
             $totalBobot = $jawabans->sum(fn ($jp) => (float) ($jp->bankSoal?->bobot ?? 1));
-            $totalNilai = $jawabans->sum(fn ($jp) => (float) ($jp->nilai ?? 0));
+            $totalNilai = 0;
+            foreach ($jawabans as $jp) {
+                $bobot = (float) ($jp->bankSoal?->bobot ?? 1);
+                $nilaiJawaban = (float) ($jp->nilai ?? 0);
+                if ($jp->bankSoal?->jenis === 'essay') {
+                    $totalNilai += ($nilaiJawaban / 100) * $bobot;
+                } else {
+                    $totalNilai += $nilaiJawaban;
+                }
+            }
             $nilai = $totalBobot > 0 ? round(($totalNilai / $totalBobot) * 100, 2) : 0;
 
             NilaiKompetensi::updateOrCreate(
@@ -309,6 +361,9 @@ class AsesmenController extends CrudController
         ]);
 
         \App\Models\Walidata::where('user_id', $peserta->user_id)->update(['last_reset_request_at' => null]);
+
+        $sisaNilai = \App\Models\NilaiKompetensi::where('user_id', $peserta->user_id)->avg('nilai');
+        \App\Models\Walidata::where('user_id', $peserta->user_id)->update(['nilai_kompetensi' => round((float) $sisaNilai, 2)]);
 
         AuditLogService::log('reset', 'PesertaAsesmen', 'Reset ujian oleh '.$request->user()->name, [
             'peserta_id' => $pesertaId,
@@ -352,6 +407,7 @@ class AsesmenController extends CrudController
             'soal' => $j->bankSoal?->pertanyaan ?? '-',
             'jawaban' => $j->jawaban,
             'nilai' => $j->nilai,
+            'nilai_total' => $j->pesertaAsesmen?->nilai,
             'catatan_penguji' => $j->catatan_penguji,
             'dinilai' => !is_null($j->dinilai_oleh),
             'lulus' => $j->pesertaAsesmen?->lulus,
@@ -408,6 +464,7 @@ class AsesmenController extends CrudController
             'is_benar' => $data['nilai'] > 0,
         ]);
         $peserta = $service->recalculatePeserta($jawaban->pesertaAsesmen);
+        $this->saveCompetencyScores($peserta);
 
         $sertifikat = Sertifikat::where('user_id', $peserta->user_id)->where('asesmen_id', $peserta->asesmen_id);
         if ($peserta->lulus) {
@@ -416,7 +473,7 @@ class AsesmenController extends CrudController
                 [
                     'nomor_sertifikat' => 'SKW-'.now()->format('Ymd').'-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6)),
                     'kompetensi_id' => $peserta->asesmen?->kompetensi_id,
-                    'level_id' => $peserta->asesmen?->level_id,
+                    'level_id' => \App\Models\Walidata::where('user_id', $peserta->user_id)->value('level_id'),
                     'nilai_akhir' => $peserta->nilai,
                     'kategori_kompetensi' => $service->kategori((float) $peserta->nilai),
                     'tanggal_terbit' => now(),
@@ -449,7 +506,7 @@ class AsesmenController extends CrudController
             [
                 'nomor_sertifikat' => 'SKW-'.now()->format('Ymd').'-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6)),
                 'kompetensi_id' => $peserta->asesmen?->kompetensi_id,
-                'level_id' => $peserta->asesmen?->level_id,
+                'level_id' => \App\Models\Walidata::where('user_id', $peserta->user_id)->value('level_id'),
                 'nilai_akhir' => $peserta->nilai,
                 'kategori_kompetensi' => $service->kategori((float) $peserta->nilai),
                 'tanggal_terbit' => now(),

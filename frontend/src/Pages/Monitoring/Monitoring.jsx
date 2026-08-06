@@ -1,4 +1,4 @@
-import { RefreshCw, Activity, UserCheck, CheckCircle, XCircle, Play, Award, FileCheck, Trash2, ClipboardCheck } from 'lucide-react'
+import { RefreshCw, Activity, UserCheck, CheckCircle, XCircle, Play, Award, FileCheck, Trash2, ClipboardCheck, Clock } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { can } from '../../utils/can'
@@ -19,6 +19,7 @@ function Monitoring() {
   const [pretestRows, setPretestRows] = useState([])
   const [pretestLoading, setPretestLoading] = useState(false)
   const [pendingActivation, setPendingActivation] = useState([])
+  const [statusFilter, setStatusFilter] = useState('semua')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -153,7 +154,14 @@ function Monitoring() {
     selesai: rows.filter((r) => r.status === 'selesai').length,
     lulus: rows.filter((r) => r.lulus).length,
     sedang: rows.filter((r) => r.status === 'sedang_mengerjakan').length,
+    menunggu: rows.filter((r) => ['menunggu_dinilai', 'dinilai', 'wawancara'].includes(r.status)).length,
   }
+
+  const filteredRows = statusFilter === 'semua' ? rows : rows.filter((row) => statusFilter === 'mengerjakan'
+    ? row.status === 'sedang_mengerjakan'
+    : statusFilter === 'menunggu'
+      ? ['menunggu_dinilai', 'dinilai', 'wawancara'].includes(row.status)
+      : row.status === 'selesai')
 
   return (
     <div className="space-y-6">
@@ -174,10 +182,11 @@ function Monitoring() {
 
       {/* Quick Stats */}
       {tab === 'asesmen' && (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {[
             { label: 'Total Peserta', value: asesmenStats.total, icon: UserCheck, color: 'from-indigo-600 to-indigo-800' },
             { label: 'Sedang Mengerjakan', value: asesmenStats.sedang, icon: Play, color: 'from-amber-600 to-amber-800' },
+            { label: 'Menunggu Dinilai', value: asesmenStats.menunggu, icon: Clock, color: 'from-amber-600 to-amber-800' },
             { label: 'Selesai', value: asesmenStats.selesai, icon: CheckCircle, color: 'from-emerald-600 to-emerald-800' },
             { label: 'Lulus', value: asesmenStats.lulus, icon: Award, color: 'from-cyan-600 to-cyan-800' },
           ].map((s) => (
@@ -218,7 +227,20 @@ function Monitoring() {
               <FileCheck className="inline-block h-3.5 w-3.5 -mt-0.5 mr-1" />Pretest
             </button>
           </div>
-          {tab === 'pretest' && (user?.roles?.includes('Super Admin') || user?.roles?.includes('Admin Diskominfo')) && (
+          {tab === 'asesmen' ? (
+            <div className="flex flex-wrap justify-end gap-1">
+              {[
+                { label: 'Semua', value: 'semua' },
+                { label: 'Mengerjakan', value: 'mengerjakan' },
+                { label: 'Menunggu Dinilai', value: 'menunggu' },
+                { label: 'Selesai', value: 'selesai' },
+              ].map((filter) => (
+                <button key={filter.value} onClick={() => setStatusFilter(filter.value)} className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${statusFilter === filter.value ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}>
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          ) : tab === 'pretest' && (user?.roles?.includes('Super Admin') || user?.roles?.includes('Admin Diskominfo')) && (
             <button onClick={cleanupPretest} className="inline-flex items-center gap-1.5 rounded-full border border-rose-600/20 px-3 py-1.5 text-xs font-medium text-rose-400 transition hover:bg-rose-500/10"><Trash2 className="h-3.5 w-3.5" />Bersihkan</button>
           )}
         </div>
@@ -229,6 +251,8 @@ function Monitoring() {
             <div className="flex items-center justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>
           ) : rows.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-slate-500"><Activity className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada data progres</p></div>
+          ) : filteredRows.length === 0 ? (
+            <div className="flex flex-col items-center py-16 text-slate-500"><Activity className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Tidak ada peserta pada filter ini</p></div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -238,7 +262,7 @@ function Monitoring() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#262636]">
-                  {rows.map((row) => {
+                  {filteredRows.map((row) => {
                     const completed = row.status === 'selesai'
                     const belumMulai = row.status === 'belum_mulai'
                     const waiting = ['menunggu_dinilai', 'dinilai', 'wawancara'].includes(row.status)

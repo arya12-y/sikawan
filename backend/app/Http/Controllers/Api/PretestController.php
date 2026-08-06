@@ -18,12 +18,12 @@ class PretestController extends Controller
         $schedule = \App\Models\ExamSchedule::where('is_active', true)->first();
         abort_unless($schedule && now()->between($schedule->pretest_start, $schedule->pretest_end), 403, 'Pretest belum dibuka');
 
-        if (!$user->hasRole('Super Admin')) {
+        if (!$user->hasRole('Super Admin') && !$user->hasPermissionTo('asesmen.simulasi', 'sanctum')) {
             abort_unless($user->walidata?->pretest_activated, 403, 'Pretest belum diaktifkan oleh admin. Silakan hubungi admin.');
         }
 
         $existing = PretestResult::where('user_id', $user->id)->exists();
-        if ($existing && !$user->hasRole('Super Admin')) {
+        if ($existing && !$user->hasRole('Super Admin') && !$user->hasPermissionTo('asesmen.simulasi', 'sanctum')) {
             abort(422, 'Anda sudah mengikuti pretest');
         }
 
@@ -82,6 +82,11 @@ class PretestController extends Controller
             'jawaban.*.jawaban' => ['nullable', 'string'],
         ]);
 
+        $isWalidata = $user->hasRole('Walidata');
+        if (!$isWalidata) {
+            abort_unless($user->hasPermissionTo('asesmen.simulasi', 'sanctum'), 403, 'Anda tidak memiliki izin pretest simulasi');
+        }
+
         $jawabanList = $data['jawaban'];
         $soalIds = collect($jawabanList)->pluck('soal_id');
         $soals = BankSoal::whereIn('id', $soalIds)->get()->keyBy('id');
@@ -116,14 +121,16 @@ class PretestController extends Controller
             $nilai = $result['total'] > 0 ? round(($result['skor'] / $result['total']) * 100, 2) : 0;
             $totalNilai += $nilai;
 
-            PretestResult::create([
-                'user_id' => $user->id,
-                'kompetensi_id' => $kid,
-                'sesi_id' => $data['sesi_id'],
-                'nilai' => $nilai,
-                'jawaban' => $result['jawaban'],
-                'completed_at' => now(),
-            ]);
+            if ($isWalidata) {
+                PretestResult::create([
+                    'user_id' => $user->id,
+                    'kompetensi_id' => $kid,
+                    'sesi_id' => $data['sesi_id'],
+                    'nilai' => $nilai,
+                    'jawaban' => $result['jawaban'],
+                    'completed_at' => now(),
+                ]);
+            }
         }
 
         $rataRata = $totalKompetensi > 0 ? round($totalNilai / $totalKompetensi) : 0;
@@ -132,14 +139,16 @@ class PretestController extends Controller
             ->where('nilai_max', '>=', $rataRata)
             ->first() ?? Level::orderBy('id')->first();
 
-        Walidata::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'level_id' => $level?->id,
-                'opd_id' => $user->walidata?->opd_id ?? optional(\App\Models\Opd::first())->id ?? 1,
-                'is_active' => true,
-            ]
-        );
+        if ($isWalidata) {
+            Walidata::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'level_id' => $level?->id,
+                    'opd_id' => $user->walidata?->opd_id ?? optional(\App\Models\Opd::first())->id ?? 1,
+                    'is_active' => true,
+                ]
+            );
+        }
 
         $kompetensiIds = collect($perKompetensi)->keys();
         $kompetensiList = \App\Models\Kompetensi::whereIn('id', $kompetensiIds)->get()->keyBy('id');
@@ -153,6 +162,7 @@ class PretestController extends Controller
                 'kompetensi' => $kompetensiList->get($k)?->nama ?? "Kompetensi #{$k}",
                 'skor' => $r['total'] > 0 ? round(($r['skor'] / $r['total']) * 100, 2) : 0,
             ])->values(),
+            ...(!$isWalidata ? ['simulasi' => true] : []),
         ]);
     }
 

@@ -82,20 +82,22 @@ function Roles() {
               <table className="w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-500">
                   <tr className="border-b border-[#262636] bg-[#09090E]">
-                    <th className="px-5 py-3.5 font-semibold">Role</th><th className="px-5 py-3.5 font-semibold">Permission</th><th className="px-5 py-3.5 font-semibold text-center w-20">Pengguna</th><th className="px-5 py-3.5 text-left font-semibold w-28 translate-x-[27px]">Aksi</th>
+                    <th className="px-5 py-3.5 text-center font-semibold">Role</th><th className="px-5 py-3.5 text-center font-semibold">Permission</th><th className="px-5 py-3.5 text-center font-semibold w-20">Pengguna</th><th className="px-5 py-3.5 text-center font-semibold w-28">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#262636]">
                   {roles.map((role) => (
                     <tr className="transition hover:bg-white/[0.02]" key={role.id}>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 text-center">
                         <p className="font-medium text-slate-100">{role.name}</p>
                       </td>
-                      <td className="px-5 py-4"><span className="text-xs text-slate-400 line-clamp-1">{permCount(role.permissions || []) || '-'}</span></td>
+                      <td className="px-5 py-4 text-center"><span className="text-xs text-slate-400 line-clamp-1">{permCount(role.permissions || []) || '-'}</span></td>
                       <td className="px-5 py-4 text-center"><span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-400"><Users className="h-3 w-3" />{role.users_count}</span></td>
-                      <td className="px-5 py-4 text-right whitespace-nowrap">
-                        <button onClick={() => openEdit(role)} className="mr-2 inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-4 w-4" /></button>
+                      <td className="px-5 py-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => openEdit(role)} className="inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><Pencil className="h-4 w-4" /></button>
                         <button onClick={() => remove(role)} className="inline-flex items-center justify-center rounded-xl border border-rose-600/20 p-2 text-sm text-rose-400 transition-colors hover:bg-rose-500/10" title="Hapus"><Trash2 className="h-4 w-4" /></button>
+                        </div>
                       </td>
                     </tr>
                   ))}

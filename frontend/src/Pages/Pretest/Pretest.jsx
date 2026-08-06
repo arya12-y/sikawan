@@ -424,6 +424,7 @@ function Pretest() {
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-400 mb-3">Hasil Pretest</span>
           <div className="mb-2">
+            {result.simulasi && <p className="mb-3 text-xs font-semibold text-amber-400">MODE SIMULASI — hasil tidak disimpan</p>}
             <p className="text-sm text-slate-400">Skor Total</p>
             <p className="text-2xl font-bold text-slate-100">{result.rata_rata ?? '-'}</p>
           </div>

@@ -27,7 +27,7 @@ class SertifikatController extends Controller
     {
         $peserta = PesertaAsesmen::with('user', 'asesmen.kompetensi', 'asesmen.level')->findOrFail($pesertaId);
         abort_unless($peserta->lulus, 422, 'Peserta belum lulus');
-        $sertifikat = Sertifikat::firstOrCreate(['user_id' => $peserta->user_id, 'asesmen_id' => $peserta->asesmen_id], ['nomor_sertifikat' => 'SKW-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)), 'kompetensi_id' => $peserta->asesmen->kompetensi_id, 'level_id' => $peserta->asesmen->level_id, 'nilai_akhir' => $peserta->nilai, 'kategori_kompetensi' => $service->kategori((float) $peserta->nilai), 'tanggal_terbit' => now(), 'tanggal_expired' => now()->addYears(3), 'is_active' => true]);
+        $sertifikat = Sertifikat::firstOrCreate(['user_id' => $peserta->user_id, 'asesmen_id' => $peserta->asesmen_id], ['nomor_sertifikat' => 'SKW-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)), 'kompetensi_id' => $peserta->asesmen->kompetensi_id, 'level_id' => \App\Models\Walidata::where('user_id', $peserta->user_id)->value('level_id'), 'nilai_akhir' => $peserta->nilai, 'kategori_kompetensi' => $service->kategori((float) $peserta->nilai), 'tanggal_terbit' => now(), 'tanggal_expired' => now()->addYears(3), 'is_active' => true]);
 
         return response()->json($sertifikat->load('user', 'asesmen', 'kompetensi', 'level'));
     }

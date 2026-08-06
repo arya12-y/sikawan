@@ -687,7 +687,7 @@ function MateriList({ jenis }) {
 
   const pretestDone = schedulePretestDone
   const examDone = asesmenStatus === 'selesai'
-  const phaseBlocked = !scheduleLoading && !isAdmin && phase && !examDone && (phase === 'exam' || (phase === 'pretest' && !pretestDone))
+  const phaseBlocked = !scheduleLoading && !can(user, 'jadwal.bebas') && phase && !examDone && (phase === 'exam' || (phase === 'pretest' && !pretestDone))
   const hasUserLevel = userLevelUrutan !== null
 
   const levelMap = {}

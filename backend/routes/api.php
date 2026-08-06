@@ -113,6 +113,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
     Route::middleware('permission:asesmen.start')->group(function (): void {
         Route::post('asesmen/minta-reset', [AsesmenController::class, 'mintaReset']);
+        Route::post('asesmen/{id}/submit-simulasi', [AsesmenController::class, 'submitSimulasi']);
         Route::post('asesmens/{asesmen}/start', [AsesmenController::class, 'start']);
         Route::post('peserta-asesmens/{peserta}/save-answer', [AsesmenController::class, 'saveAnswer']);
         Route::post('peserta-asesmens/{peserta}/submit', [AsesmenController::class, 'submit']);
