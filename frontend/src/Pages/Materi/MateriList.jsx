@@ -139,6 +139,14 @@ function ViewerContent({ viewing, jenis, config, onDownload, onVideoProgress }) 
     )
   }
   if (jenis === 'presentasi' && viewing.file_path) {
+    const isPdf = String(viewing.file_path).toLowerCase().endsWith('.pdf')
+    if (isPdf) {
+      return (
+        <div className="overflow-hidden rounded-xl shadow-lg shadow-black/20">
+          <iframe src={FILE_URL + '/api/materi/' + viewing.id + '/file'} title={viewing.judul} className="h-[600px] w-full" />
+        </div>
+      )
+    }
     const ext = viewing.file_path?.split('.').pop()?.toUpperCase() || 'FILE'
     return (
       <div className="flex flex-col items-center rounded-xl border border-[#1E1E2E] bg-[#0D0D15] py-12">

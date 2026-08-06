@@ -92,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('materis/{materi}', [MateriController::class, 'destroy'])->middleware('permission:materi.delete');
     Route::get('bank-soals', [BankSoalController::class, 'index'])->middleware('permission:bank-soal.view');
     Route::post('bank-soals', [BankSoalController::class, 'store'])->middleware('permission:bank-soal.create');
+    Route::post('bank-soals/bulk-delete', [BankSoalController::class, 'bulkDelete'])->middleware('permission:bank-soal.delete');
     Route::get('bank-soals/{bank_soal}', [BankSoalController::class, 'show'])->middleware('permission:bank-soal.view');
     Route::put('bank-soals/{bank_soal}', [BankSoalController::class, 'update'])->middleware('permission:bank-soal.update');
     Route::patch('bank-soals/{bank_soal}', [BankSoalController::class, 'update'])->middleware('permission:bank-soal.update');

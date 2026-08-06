@@ -12,6 +12,28 @@ const normalize = (payload) => Array.isArray(payload?.data) ? payload.data : (Ar
 const inputClass = 'w-full rounded-xl border border-[#262636] bg-[#1A1A26] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
 const labelClass = 'block text-sm font-medium text-slate-300 mb-1.5'
 
+const parseCsv = (text) => {
+  const records = []
+  let row = []
+  let value = ''
+  let quoted = false
+  for (const char of text.replace(/^\uFEFF/, '')) {
+    if (char === '"') quoted = !quoted
+    else if (char === ',' && !quoted) { row.push(value.trim()); value = '' }
+    else if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\n' && (value || row.length)) { row.push(value.trim()); records.push(row); row = []; value = '' }
+    } else value += char
+  }
+  if (value || row.length) { row.push(value.trim()); records.push(row) }
+  const headers = (records.shift() || []).map((header) => header.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''))
+  return records.map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || ''])))
+}
+
+const csvEscape = (value) => {
+  const text = String(value ?? '')
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
 function BankSoal() {
   const { user } = useAuth()
   const [rows, setRows] = useState([])
@@ -27,7 +49,7 @@ function BankSoal() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showImport, setShowImport] = useState(false)
-  const [importText, setImportText] = useState('')
+  const [importCsv, setImportCsv] = useState('')
   const [importing, setImporting] = useState(false)
   const [page, setPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
@@ -121,47 +143,66 @@ function BankSoal() {
     }
   }
 
-  const remove = async (row) => { if (await confirmDelete(row.pertanyaan || 'Soal ini')) { await api.delete(`/bank-soals/${row.id}`); goToPage(1) } }
+  const remove = async (row) => {
+    if (!await confirmDelete(row.pertanyaan || 'Soal ini')) return
+    await api.delete(`/bank-soals/${row.id}`)
+    const current = page
+    await goToPage(current)
+    if (rows.length === 1 && current > 1) await goToPage(current - 1)
+  }
 
   const exportCsv = async () => {
     try { const res = await api.get('/bank-soals/export?format=csv', { responseType: 'blob' }); const url = URL.createObjectURL(new Blob([res.data])); const link = document.createElement('a'); link.href = url; link.download = 'bank-soal.csv'; link.click(); URL.revokeObjectURL(url) } catch (e) { toast('error', e.response?.data?.message || 'Gagal export bank soal') }
   }
 
+  const downloadTemplate = () => {
+    const rows = [
+      ['Kompetensi', 'Level', 'Tipe', 'Jenis', 'Pertanyaan', 'Jawaban', 'Pembahasan', 'Bobot', 'Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D'],
+      ['Satu Data Indonesia', 'Pemula', 'quiz;pretest', 'PG', 'Apa tujuan SDI?', 'A', 'Perpres 39/2019', 1, 'Opsi1', 'Opsi2', 'Opsi3', 'Opsi4'],
+      ['Satu Data Indonesia', 'Dasar', 'asesmen', 'Essay', 'Jelaskan metadata?', '', 'Penjelasan metadata', 2, '', '', '', ''],
+    ]
+    const blob = new Blob([rows.map((row) => row.map(csvEscape).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url; link.download = 'template-bank-soal.csv'; link.click(); URL.revokeObjectURL(url)
+  }
+
   const handleImport = async () => {
-    if (!importText.trim()) return
+    if (!importCsv.trim()) return
     setImporting(true)
     try {
-      const lines = importText.trim().split('\n').filter(Boolean)
+      const rows = parseCsv(importCsv)
       const items = []
-      for (const line of lines) {
-        const parts = line.split('|').map((s) => s.trim())
-        if (parts.length < 3) continue
-        const [kompetensiName, pertanyaan, jawaban, ...rest] = parts
-        const pembahasan = rest[0] || ''
-        const jenis = rest[1] === 'essay' ? 'essay' : 'pilihan_ganda'
-        const bobot = rest.length > 2 ? Number(rest[2]) || 1 : 1
-        const kompetensi = kompetensis.find((k) => k.nama.toLowerCase() === kompetensiName.toLowerCase()) || kompetensis[0]
+      let skipped = 0
+      for (const row of rows) {
+        const kompetensi = kompetensis.find((k) => k.nama.toLowerCase() === row.kompetensi.toLowerCase())
+        if (!kompetensi) { skipped += 1; console.warn('Kompetensi tidak ditemukan:', row.kompetensi); continue }
+        const level = levels.find((l) => l.nama.toLowerCase() === row.level.toLowerCase())
+        const jenis = ['essay'].includes(row.jenis.toLowerCase()) ? 'essay' : 'pilihan_ganda'
+        const tipe = row.tipe.split(/[;,]/).map((value) => value.trim().toLowerCase()).filter((value) => ['quiz', 'pretest', 'asesmen'].includes(value))
+        const choices = [row.pilihan_a, row.pilihan_b, row.pilihan_c, row.pilihan_d].filter((value) => value && value !== '-')
         let pilihan = null
-        let jawabanBenar = jawaban
-        if (jenis === 'pilihan_ganda' && rest.length >= 7) {
-          const choices = rest.slice(3, 7).filter(Boolean)
+        let jawabanBenar = row.jawaban
+        if (jenis === 'pilihan_ganda') {
           if (choices.length > 0) {
             pilihan = choices
-            const letterIndex = ['A', 'B', 'C', 'D'].indexOf(jawaban.toUpperCase())
-            jawabanBenar = letterIndex >= 0 && choices[letterIndex] ? choices[letterIndex] : jawaban
+            const letterIndex = ['A', 'B', 'C', 'D'].indexOf(row.jawaban.toUpperCase())
+            jawabanBenar = letterIndex >= 0 && choices[letterIndex] ? choices[letterIndex] : row.jawaban
+            const matchingChoice = choices.find((choice) => choice.toLowerCase() === row.jawaban.toLowerCase())
+            if (matchingChoice) jawabanBenar = matchingChoice
           }
         }
-        items.push({ pertanyaan, jawaban_benar: jawabanBenar, pembahasan, jenis, tipe: ['quiz'], bobot, pilihan, kompetensi_id: kompetensi?.id || kompetensis[0]?.id || '', is_active: true })
+        items.push({ kompetensi_id: kompetensi.id, level_id: level?.id || null, tipe: tipe.length > 0 ? tipe : ['quiz'], jenis, pertanyaan: row.pertanyaan, jawaban_benar: jawabanBenar || null, pembahasan: row.pembahasan || null, bobot: Number(row.bobot) || 1, pilihan, is_active: true })
       }
       if (items.length === 0) {
-        toast('error', 'Periksa format teks import Anda')
+        toast('error', 'Tidak ada baris CSV yang valid')
         setImporting(false)
         return
       }
       await api.post('/bank-soals/import', { items })
-      toast('success', `Berhasil menyimpan ${items.length} soal`)
+      toast('success', `Berhasil menyimpan ${items.length} soal${skipped ? `, ${skipped} dilewati` : ''}`)
       setShowImport(false)
-      setImportText('')
+      setImportCsv('')
       goToPage(1)
     } catch (e) { toast('error', e.response?.data?.message || 'Gagal import soal') } finally { setImporting(false) }
   }
@@ -170,7 +211,7 @@ function BankSoal() {
     const file = e.target.files?.[0]
     if (!file) return
     const text = await file.text()
-    setImportText(text)
+    setImportCsv(text)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -284,20 +325,19 @@ function BankSoal() {
         <div className="rounded-2xl border border-[#262636] bg-[#14141E] p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-100">Import Soal</h2>
-              <p className="mt-0.5 text-sm text-slate-400">Upload file CSV atau tempel teks</p>
+              <h2 className="text-lg font-bold text-slate-100">Import Soal (CSV)</h2>
+              <p className="mt-0.5 text-sm text-slate-400">1) Download Template  2) Isi di Excel  3) Upload file CSV</p>
             </div>
           </div>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <button onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-full border border-[#262636] px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-indigo-500/30 hover:text-indigo-400"><Upload className="h-4 w-4" />Pilih File</button>
+              <button onClick={downloadTemplate} className="inline-flex items-center gap-2 rounded-full border border-[#262636] px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-indigo-500/30 hover:text-indigo-400"><Download className="h-4 w-4" />Download Template</button><button onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-full border border-[#262636] px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-indigo-500/30 hover:text-indigo-400"><Upload className="h-4 w-4" />Pilih File</button>
               <input ref={fileInputRef} type="file" accept=".csv,.txt" className="hidden" onChange={handleFileImport} />
-              <span className="text-xs text-slate-500">atau tempel teks</span>
+              <span className="text-xs text-slate-500">CSV atau TXT</span>
             </div>
-            <textarea className="h-40 w-full rounded-xl border border-[#262636] bg-[#1A1A26] p-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20" placeholder={'Format: Nama Kompetensi | Pertanyaan | Jawaban | Pembahasan | jenis | bobot | OpsiA | OpsiB | OpsiC | OpsiD\nTipe: quiz, pretest, asesmen (default: quiz)\n\nContoh:\nSatu Data Indonesia | Apa itu SDI? | Kebijakan tata kelola data | Perpres 39/2019 | pilihan_ganda | 1 | Definisi A | Definisi B | Definisi C | Definisi D\nStatistik Sektoral | Sebutkan jenis statistik! | - | - | essay | 2'} value={importText} onChange={(e) => setImportText(e.target.value)} />
             <div className="flex justify-end gap-3">
-              <button onClick={() => { setShowImport(false); setImportText('') }} className="rounded-full border border-[#262636] px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:border-indigo-500/30 hover:text-indigo-400">Batal</button>
-              <button onClick={handleImport} disabled={importing || !importText.trim()} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50">{importing ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> Mengimport...</> : 'Import Soal'}</button>
+              <button onClick={() => { setShowImport(false); setImportCsv('') }} className="rounded-full border border-[#262636] px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:border-indigo-500/30 hover:text-indigo-400">Batal</button>
+              <button onClick={handleImport} disabled={importing || !importCsv.trim()} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50">{importing ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> Mengimport...</> : 'Import Soal'}</button>
             </div>
           </div>
         </div>

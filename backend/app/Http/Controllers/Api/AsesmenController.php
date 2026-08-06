@@ -34,7 +34,7 @@ class AsesmenController extends CrudController
 
     protected function validationRules(?Model $model = null): array
     {
-        return ['judul' => ['required', 'string'], 'deskripsi' => ['nullable', 'string'], 'kompetensi_ids' => ['required', 'array'], 'kompetensi_ids.*' => ['exists:kompetensis,id'], 'kompetensi_id' => ['nullable', 'exists:kompetensis,id'], 'level_id' => ['nullable', 'exists:levels,id'], 'jumlah_soal' => ['required', 'integer'], 'durasi' => ['required', 'integer'], 'nilai_lulus' => ['required', 'numeric'], 'acak_soal' => ['boolean'], 'acak_jawaban' => ['boolean'], 'tanggal_mulai' => ['nullable', 'date'], 'tanggal_selesai' => ['nullable', 'date'], 'status' => ['required', Rule::in(['draft', 'published', 'ongoing', 'finished'])]];
+        return ['judul' => ['required', 'string'], 'deskripsi' => ['nullable', 'string'], 'kompetensi_ids' => ['required', 'array'], 'kompetensi_ids.*' => ['exists:kompetensis,id'], 'kompetensi_id' => ['nullable', 'exists:kompetensis,id'], 'level_id' => ['nullable', 'exists:levels,id'], 'jumlah_soal' => ['required', 'integer'], 'durasi' => ['required', 'integer'], 'nilai_lulus' => ['required', 'numeric'], 'acak_soal' => ['boolean'], 'acak_jawaban' => ['boolean'], 'tanggal_mulai' => ['nullable', 'date'], 'tanggal_selesai' => ['nullable', 'date'], 'status' => ['required', Rule::in(['draft', 'published'])]];
     }
 
     public function store(Request $request)
@@ -98,6 +98,24 @@ class AsesmenController extends CrudController
         $asesmen->bankSoals()->sync(collect($data['soal_ids'])->mapWithKeys(fn ($soalId, $i) => [$soalId => ['urutan' => $i + 1]])->all());
 
         return response()->json($asesmen->load('bankSoals'));
+    }
+
+    public function destroy($id)
+    {
+        $asesmen = Asesmen::withTrashed()->findOrFail($id);
+        $pesertaIds = PesertaAsesmen::where('asesmen_id', $id)->pluck('id');
+        $userIds = PesertaAsesmen::where('asesmen_id', $id)->pluck('user_id');
+
+        Sertifikat::whereIn('user_id', $userIds)->where('asesmen_id', $id)->forceDelete();
+        NilaiKompetensi::where('asesmen_id', $id)->forceDelete();
+        \App\Models\Wawancara::whereIn('peserta_asesmen_id', $pesertaIds)->forceDelete();
+        JawabanPeserta::whereIn('peserta_asesmen_id', $pesertaIds)->forceDelete();
+        PesertaAsesmen::where('asesmen_id', $id)->forceDelete();
+        DB::table('asesmen_soals')->where('asesmen_id', $id)->delete();
+        $asesmen->forceDelete();
+        AuditLogService::log('delete', 'Asesmen', null, null, ['id' => $id]);
+
+        return response()->json(['message' => 'Asesmen dan data terkait dihapus']);
     }
 
     public function start(Request $request, $id)

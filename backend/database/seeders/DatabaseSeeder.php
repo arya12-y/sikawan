@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             // TrainingDataSeeder dinonaktifkan: menulis nilai kompetensi acak (kategori "Seed Data")
             // yang mengotori dashboard. Data harus real dari asesmen.
             TestDataSeeder::class,
+            SyncDataSeeder::class,
         ]);
     }
 }

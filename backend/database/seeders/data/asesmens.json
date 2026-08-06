@@ -1,0 +1,61 @@
+[
+    {
+        "id": 11,
+        "judul": "test",
+        "deskripsi": null,
+        "kompetensi_id": 7,
+        "kompetensi_ids": [
+            7,
+            3,
+            2,
+            1,
+            5,
+            6
+        ],
+        "level_id": null,
+        "jumlah_soal": 20,
+        "durasi": 30,
+        "nilai_lulus": "60.00",
+        "acak_soal": true,
+        "acak_jawaban": true,
+        "tanggal_mulai": null,
+        "tanggal_selesai": null,
+        "status": "published"
+    },
+    {
+        "id": 12,
+        "judul": "dummy cascade",
+        "deskripsi": "dummy",
+        "kompetensi_id": 1,
+        "kompetensi_ids": [
+            1
+        ],
+        "level_id": 1,
+        "jumlah_soal": 1,
+        "durasi": 10,
+        "nilai_lulus": "60.00",
+        "acak_soal": true,
+        "acak_jawaban": true,
+        "tanggal_mulai": null,
+        "tanggal_selesai": null,
+        "status": "draft"
+    },
+    {
+        "id": 13,
+        "judul": "dummy cascade",
+        "deskripsi": "dummy",
+        "kompetensi_id": 1,
+        "kompetensi_ids": [
+            1
+        ],
+        "level_id": 1,
+        "jumlah_soal": 1,
+        "durasi": 10,
+        "nilai_lulus": "60.00",
+        "acak_soal": true,
+        "acak_jawaban": true,
+        "tanggal_mulai": null,
+        "tanggal_selesai": null,
+        "status": "draft"
+    }
+]

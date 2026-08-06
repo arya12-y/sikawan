@@ -97,25 +97,25 @@ function Laporan() {
           <div className="flex flex-col items-center py-16 text-slate-500"><FileBarChart className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada data laporan</p></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-sm">
               <thead className="text-xs uppercase tracking-wider text-slate-500">
                 <tr className="border-b border-[#262636] bg-[#09090E]">
-                  <th className="px-5 py-3.5 font-semibold">Nama</th><th className="px-5 py-3.5 font-semibold">Asesmen</th><th className="px-5 py-3.5 font-semibold text-center w-16">Nilai</th><th className="px-5 py-3.5 font-semibold w-24">Status</th><th className="px-5 py-3.5 font-semibold w-28">Tanggal</th>
+                  <th className="px-8 py-3.5 text-center font-semibold">Nama</th><th className="px-8 py-3.5 text-center font-semibold">Asesmen</th><th className="px-8 py-3.5 text-center font-semibold">Nilai</th><th className="px-8 py-3.5 text-center font-semibold">Status</th><th className="px-8 py-3.5 text-center font-semibold">Tanggal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#262636]">
                 {rows.map((row) => (
                   <tr className="transition hover:bg-white/[0.02]" key={row.id}>
-                    <td className="px-5 py-4 font-medium text-slate-100">{row.user?.name || '-'}</td>
-                    <td className="px-5 py-4 text-slate-400">{row.asesmen?.judul || row.nomor_sertifikat || '-'}</td>
-                    <td className="px-5 py-4 text-center font-semibold text-slate-100">{row.nilai || row.nilai_akhir || '-'}</td>
-                    <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
+                    <td className="px-8 py-4 text-center font-medium text-slate-100">{row.user?.name || '-'}</td>
+                    <td className="px-8 py-4 text-center text-slate-400">{row.asesmen?.judul || row.nomor_sertifikat || '-'}</td>
+                    <td className="px-8 py-4 text-center font-semibold text-slate-100">{row.nilai || row.nilai_akhir || '-'}</td>
+                    <td className="px-8 py-4 text-center"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
                       row.status === 'selesai' || row.lulus ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-400/20' :
                       row.status === 'sedang_mengerjakan' ? 'bg-amber-500/10 text-amber-400 ring-amber-400/20' :
                       row.is_active ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-400/20' :
                       'bg-slate-500/10 text-slate-400 ring-slate-400/20'
                     }`}>{row.lulus ? 'Lulus' : row.status || (row.is_active ? 'Aktif' : '-')}</span></td>
-                    <td className="px-5 py-4 text-slate-400">{new Date(row.created_at || row.tanggal_terbit).toISOString().split('T')[0]}</td>
+                    <td className="px-8 py-4 text-center text-slate-400">{new Date(row.created_at || row.tanggal_terbit).toISOString().split('T')[0]}</td>
                   </tr>
                 ))}
               </tbody>

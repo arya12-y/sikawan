@@ -73,6 +73,17 @@ class BankSoalController extends CrudController
         return response()->json($soal->load($this->with));
     }
 
+    public function bulkDelete(Request $request)
+    {
+        $data = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']]);
+        $ids = $data['ids'];
+        \Illuminate\Support\Facades\DB::table('asesmen_soals')->whereIn('bank_soal_id', $ids)->delete();
+        \Illuminate\Support\Facades\DB::table('materi_soals')->whereIn('bank_soal_id', $ids)->delete();
+        $deleted = BankSoal::whereIn('id', $ids)->forceDelete();
+
+        return response()->json(['message' => $deleted.' soal dihapus']);
+    }
+
     public function preview($id)
     {
         return response()->json(BankSoal::with($this->with)->findOrFail($id));
@@ -96,7 +107,7 @@ class BankSoalController extends CrudController
 
     public function import(Request $request)
     {
-        $rows = $request->validate(['items' => ['required', 'array'], 'items.*.kompetensi_id' => ['required', 'exists:kompetensis,id'], 'items.*.level_id' => ['required', 'exists:levels,id'], 'items.*.jenis' => ['required'], 'items.*.pertanyaan' => ['required'], 'items.*.bobot' => ['required', 'numeric']])['items'];
+        $rows = $request->validate(['items' => ['required', 'array'], 'items.*.kompetensi_id' => ['required', 'exists:kompetensis,id'], 'items.*.level_id' => ['nullable', 'exists:levels,id'], 'items.*.tipe' => ['sometimes', 'array'], 'items.*.jenis' => ['required'], 'items.*.pertanyaan' => ['required'], 'items.*.bobot' => ['required', 'numeric']])['items'];
         foreach ($rows as $row) {
             BankSoal::create($row + ['created_by' => $request->user()?->id]);
         }

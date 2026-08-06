@@ -209,37 +209,37 @@ function ExamSchedules() {
           ) : schedules.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-slate-500"><Calendar className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada jadwal</p></div>
           ) : (
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-sm">
               <thead className="text-xs uppercase tracking-wider text-slate-500">
                 <tr className="border-b border-[#262636] bg-[#09090E]">
-                  <th className="px-4 py-3 font-semibold">Judul</th>
-                  <th className="px-4 py-3 font-semibold hidden lg:table-cell">Pretest</th>
-                  <th className="px-4 py-3 font-semibold hidden lg:table-cell">Asesmen</th>
-                  <th className="px-4 py-3 font-semibold w-24">Status</th>
-                  <th className="px-4 py-3 text-right font-semibold w-32 -translate-x-[25px]">Aksi</th>
+                  <th className="px-4 py-3 text-center font-semibold">Judul</th>
+                  <th className="px-4 py-3 text-center font-semibold hidden lg:table-cell">Pretest</th>
+                  <th className="px-4 py-3 text-center font-semibold hidden lg:table-cell">Asesmen</th>
+                  <th className="px-4 py-3 text-center font-semibold w-24">Status</th>
+                  <th className="px-4 py-3 text-center font-semibold w-32">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#262636]">
                 {schedules.map((row) => (
                   <tr className="transition hover:bg-white/[0.02]" key={row.id}>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-center">
                       <p className="font-medium text-slate-100">{row.title}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{row.kompetensi_ids?.length || 0} kompetensi</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-400 hidden lg:table-cell">
+                    <td className="px-4 py-3 text-center text-slate-400 hidden lg:table-cell">
                       <span className="text-xs text-slate-500">Mulai:</span>
                       <p className="text-slate-300">{formatDate(row.pretest_start)}</p>
                       <span className="text-xs text-slate-500">Selesai:</span>
                       <p className="text-slate-300">{formatDate(row.pretest_end)}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-400 hidden lg:table-cell">
+                    <td className="px-4 py-3 text-center text-slate-400 hidden lg:table-cell">
                       <span className="text-xs text-slate-500">Mulai:</span>
                       <p className="text-slate-300">{formatDate(row.exam_start)}</p>
                       <span className="text-xs text-slate-500">Selesai:</span>
                       <p className="text-slate-300">{formatDate(row.exam_end)}</p>
                     </td>
-                    <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${statusStyle(row.status)}`}>{row.status || 'draft'}</span></td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <td className="px-4 py-3 text-center"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${statusStyle(row.status)}`}>{row.status || 'draft'}</span></td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
                       {can(user, 'exam-schedules.update') && <button onClick={() => openEdit(row)} className="mr-2 inline-flex items-center justify-center rounded-xl border border-[#262636] p-2 text-sm text-slate-400 transition-colors hover:bg-[#1A1A26] hover:text-slate-200" title="Edit"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button>}
                       {can(user, 'exam-schedules.delete') && <button onClick={() => remove(row)} className="inline-flex items-center justify-center rounded-xl border border-rose-600/20 p-2 text-sm text-rose-400 transition-colors hover:bg-rose-500/10" title="Hapus"><Trash2 className="h-4 w-4" /></button>}
                     </td>

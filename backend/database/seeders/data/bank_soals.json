@@ -1,0 +1,1078 @@
+[
+    {
+        "id": 47,
+        "kompetensi_id": 1,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Forum koordinasi data berfungsi untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Satu Data Indonesia. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 48,
+        "kompetensi_id": 1,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Tujuan standar data dalam kebijakan Satu Data adalah ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Satu Data Indonesia. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 49,
+        "kompetensi_id": 1,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Metadata membantu pengguna untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Satu Data Indonesia. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 50,
+        "kompetensi_id": 1,
+        "level_id": 3,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Walidata bertanggung jawab untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Satu Data Indonesia. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 51,
+        "kompetensi_id": 1,
+        "level_id": 4,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz",
+            "pretest",
+            "asesmen"
+        ],
+        "pertanyaan": "Langkah awal menyelesaikan perbedaan data antarinstansi adalah ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Satu Data Indonesia. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 52,
+        "kompetensi_id": 1,
+        "level_id": 5,
+        "jenis": "essay",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Jelaskan hubungan antara standar data, metadata, dan interoperabilitas dalam Satu Data Indonesia.",
+        "pilihan": null,
+        "jawaban_benar": null,
+        "pembahasan": "Jawaban diharapkan membahas definisi Satu Data Indonesia, tahapan utama, pembagian peran, pengendalian kualitas, dan contoh penerapannya.",
+        "bobot": "3.00",
+        "is_active": true
+    },
+    {
+        "id": 53,
+        "kompetensi_id": 2,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Statistik sektoral terutama digunakan untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Statistik Sektoral. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 54,
+        "kompetensi_id": 2,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Tahap awal kegiatan statistik adalah ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Statistik Sektoral. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 55,
+        "kompetensi_id": 2,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Statistik sektoral yang baik harus memiliki ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Statistik Sektoral. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 56,
+        "kompetensi_id": 2,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Validasi statistik dilakukan untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Statistik Sektoral. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 57,
+        "kompetensi_id": 2,
+        "level_id": 3,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Kegiatan statistik perlu didokumentasikan agar ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Statistik Sektoral. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 58,
+        "kompetensi_id": 2,
+        "level_id": 4,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz",
+            "pretest",
+            "asesmen"
+        ],
+        "pertanyaan": "Indikator statistik harus disajikan dengan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Statistik Sektoral. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 59,
+        "kompetensi_id": 2,
+        "level_id": 5,
+        "jenis": "essay",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Uraikan tahapan menghasilkan statistik sektoral yang dapat dipertanggungjawabkan.",
+        "pilihan": null,
+        "jawaban_benar": null,
+        "pembahasan": "Jawaban diharapkan membahas definisi Statistik Sektoral, tahapan utama, pembagian peran, pengendalian kualitas, dan contoh penerapannya.",
+        "bobot": "3.00",
+        "is_active": true
+    },
+    {
+        "id": 60,
+        "kompetensi_id": 3,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Metadata adalah ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Metadata. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 61,
+        "kompetensi_id": 3,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Metadata struktural menjelaskan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Metadata. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 62,
+        "kompetensi_id": 3,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Metadata proses berisi informasi tentang ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Metadata. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 63,
+        "kompetensi_id": 3,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Manfaat metadata bagi pengguna adalah ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Metadata. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 64,
+        "kompetensi_id": 3,
+        "level_id": 3,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Definisi operasional dalam metadata harus ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Metadata. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 65,
+        "kompetensi_id": 3,
+        "level_id": 4,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz",
+            "pretest",
+            "asesmen"
+        ],
+        "pertanyaan": "Metadata yang baik perlu diperbarui ketika ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Metadata. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 66,
+        "kompetensi_id": 3,
+        "level_id": 5,
+        "jenis": "essay",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Jelaskan komponen metadata yang wajib tersedia pada sebuah dataset pemerintah.",
+        "pilihan": null,
+        "jawaban_benar": null,
+        "pembahasan": "Jawaban diharapkan membahas definisi Metadata, tahapan utama, pembagian peran, pengendalian kualitas, dan contoh penerapannya.",
+        "bobot": "3.00",
+        "is_active": true
+    },
+    {
+        "id": 67,
+        "kompetensi_id": 4,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Standar data digunakan untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Standar Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 68,
+        "kompetensi_id": 4,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Satuan ukuran merupakan bagian dari ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Standar Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 69,
+        "kompetensi_id": 4,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Kode referensi membantu ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Standar Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 70,
+        "kompetensi_id": 4,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Definisi data yang seragam mencegah ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Standar Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 71,
+        "kompetensi_id": 4,
+        "level_id": 3,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Standar data perlu disepakati oleh ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Standar Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 72,
+        "kompetensi_id": 4,
+        "level_id": 4,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz",
+            "pretest",
+            "asesmen"
+        ],
+        "pertanyaan": "Perubahan standar data harus ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Standar Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 73,
+        "kompetensi_id": 4,
+        "level_id": 5,
+        "jenis": "essay",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Jelaskan cara menerapkan standar data agar dataset dari dua instansi dapat digabungkan.",
+        "pilihan": null,
+        "jawaban_benar": null,
+        "pembahasan": "Jawaban diharapkan membahas definisi Standar Data, tahapan utama, pembagian peran, pengendalian kualitas, dan contoh penerapannya.",
+        "bobot": "3.00",
+        "is_active": true
+    },
+    {
+        "id": 74,
+        "kompetensi_id": 5,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Kelengkapan data menunjukkan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Kualitas Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 75,
+        "kompetensi_id": 5,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Konsistensi data berarti ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Kualitas Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 76,
+        "kompetensi_id": 5,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Keunikan data berkaitan dengan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Kualitas Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 77,
+        "kompetensi_id": 5,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Ketepatan waktu data penting karena ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Kualitas Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 78,
+        "kompetensi_id": 5,
+        "level_id": 3,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Anomali data sebaiknya ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Kualitas Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 79,
+        "kompetensi_id": 5,
+        "level_id": 4,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz",
+            "pretest",
+            "asesmen"
+        ],
+        "pertanyaan": "Profiling dataset dilakukan untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Kualitas Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 80,
+        "kompetensi_id": 5,
+        "level_id": 5,
+        "jenis": "essay",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Uraikan dimensi kualitas data dan contoh pemeriksaan untuk masing-masing dimensi.",
+        "pilihan": null,
+        "jawaban_benar": null,
+        "pembahasan": "Jawaban diharapkan membahas definisi Kualitas Data, tahapan utama, pembagian peran, pengendalian kualitas, dan contoh penerapannya.",
+        "bobot": "3.00",
+        "is_active": true
+    },
+    {
+        "id": 81,
+        "kompetensi_id": 6,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "EPSS merupakan instrumen untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada EPSS. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 82,
+        "kompetensi_id": 6,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Penilaian EPSS menekankan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada EPSS. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 83,
+        "kompetensi_id": 6,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Bukti dukung EPSS harus ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada EPSS. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 84,
+        "kompetensi_id": 6,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Evaluasi penyelenggaraan statistik berguna untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada EPSS. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 85,
+        "kompetensi_id": 6,
+        "level_id": 3,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Perbaikan hasil EPSS sebaiknya ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada EPSS. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 86,
+        "kompetensi_id": 6,
+        "level_id": 4,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz",
+            "pretest",
+            "asesmen"
+        ],
+        "pertanyaan": "Unit kerja perlu menggunakan hasil EPSS untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada EPSS. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 87,
+        "kompetensi_id": 6,
+        "level_id": 5,
+        "jenis": "essay",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Jelaskan bagaimana hasil EPSS dapat digunakan untuk menyusun rencana peningkatan statistik sektoral.",
+        "pilihan": null,
+        "jawaban_benar": null,
+        "pembahasan": "Jawaban diharapkan membahas definisi EPSS, tahapan utama, pembagian peran, pengendalian kualitas, dan contoh penerapannya.",
+        "bobot": "3.00",
+        "is_active": true
+    },
+    {
+        "id": 88,
+        "kompetensi_id": 7,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Open data idealnya menggunakan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Open Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 89,
+        "kompetensi_id": 7,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Lisensi data menjelaskan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Open Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 90,
+        "kompetensi_id": 7,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Dataset terbuka harus memiliki ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Open Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 91,
+        "kompetensi_id": 7,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Anonimisasi diperlukan untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Open Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 92,
+        "kompetensi_id": 7,
+        "level_id": 3,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Pembaruan katalog open data perlu ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Open Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 93,
+        "kompetensi_id": 7,
+        "level_id": 4,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz",
+            "pretest",
+            "asesmen"
+        ],
+        "pertanyaan": "Format terbuka memudahkan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Open Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 94,
+        "kompetensi_id": 7,
+        "level_id": 5,
+        "jenis": "essay",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Jelaskan prinsip membuka data pemerintah tanpa mengabaikan privasi dan keamanan.",
+        "pilihan": null,
+        "jawaban_benar": null,
+        "pembahasan": "Jawaban diharapkan membahas definisi Open Data, tahapan utama, pembagian peran, pengendalian kualitas, dan contoh penerapannya.",
+        "bobot": "3.00",
+        "is_active": true
+    },
+    {
+        "id": 95,
+        "kompetensi_id": 8,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Pengelolaan data mencakup ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Pengelolaan Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 96,
+        "kompetensi_id": 8,
+        "level_id": 1,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz"
+        ],
+        "pertanyaan": "Pemilik data bertugas untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Pengelolaan Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 97,
+        "kompetensi_id": 8,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Kontrol akses diterapkan berdasarkan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Pengelolaan Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 98,
+        "kompetensi_id": 8,
+        "level_id": 2,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "pretest"
+        ],
+        "pertanyaan": "Versi dataset digunakan untuk ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Pengelolaan Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 99,
+        "kompetensi_id": 8,
+        "level_id": 3,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Retensi data menentukan ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Pengelolaan Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 100,
+        "kompetensi_id": 8,
+        "level_id": 4,
+        "jenis": "pilihan_ganda",
+        "tipe": [
+            "quiz",
+            "pretest",
+            "asesmen"
+        ],
+        "pertanyaan": "Pencatatan perubahan data disebut ...",
+        "pilihan": [
+            "Menetapkan definisi dan aturan yang seragam",
+            "Menghapus seluruh data lama",
+            "Membatasi penggunaan data untuk satu orang",
+            "Mengabaikan dokumentasi"
+        ],
+        "jawaban_benar": "Menetapkan definisi dan aturan yang seragam",
+        "pembahasan": "Jawaban benar menekankan praktik utama pada Pengelolaan Data. Pendekatan ini membantu data menjadi konsisten, dapat ditelusuri, dan bermanfaat untuk pengambilan keputusan.",
+        "bobot": "1.00",
+        "is_active": true
+    },
+    {
+        "id": 101,
+        "kompetensi_id": 8,
+        "level_id": 5,
+        "jenis": "essay",
+        "tipe": [
+            "asesmen"
+        ],
+        "pertanyaan": "Jelaskan siklus pengelolaan data dari perencanaan sampai pemusnahan atau pengarsipan.",
+        "pilihan": null,
+        "jawaban_benar": null,
+        "pembahasan": "Jawaban diharapkan membahas definisi Pengelolaan Data, tahapan utama, pembagian peran, pengendalian kualitas, dan contoh penerapannya.",
+        "bobot": "3.00",
+        "is_active": true
+    }
+]

@@ -78,26 +78,26 @@ function Sertifikat() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-sm">
               <thead className="text-xs uppercase tracking-wider text-slate-500">
                 <tr className="border-b border-[#262636] bg-[#09090E]">
-                  <th className="px-4 py-3 font-semibold">Nomor</th><th className="px-4 py-3 font-semibold">Nama</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Asesmen</th><th className="px-4 py-3 font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 font-semibold text-center w-16">Nilai</th><th className="px-4 py-3 font-semibold hidden lg:table-cell">Tanggal</th><th className="px-4 py-3 text-left font-semibold w-28 translate-x-[35px]">Aksi</th>
+                  <th className="px-4 py-3 text-center font-semibold">Nomor</th><th className="px-4 py-3 text-center font-semibold">Nama</th><th className="px-4 py-3 text-center font-semibold hidden md:table-cell">Asesmen</th><th className="px-4 py-3 text-center font-semibold hidden md:table-cell">Level</th><th className="px-4 py-3 text-center font-semibold w-16">Nilai</th><th className="px-4 py-3 text-center font-semibold hidden lg:table-cell">Tanggal</th><th className="px-4 py-3 text-center font-semibold w-28">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#262636]">
                 {rows.map((row) => (
                   <tr className="transition hover:bg-white/[0.02]" key={row.id}>
-                    <td className="px-4 py-3 font-medium text-slate-100 text-xs">{row.nomor_sertifikat}</td>
-                    <td className="px-4 py-3 text-slate-300">{row.user?.name || '-'}</td>
-                    <td className="px-4 py-3 text-slate-400 hidden md:table-cell">{row.asesmen?.judul || '-'}</td>
-                    <td className="px-4 py-3 hidden md:table-cell"><span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-400">{row.level?.nama || row.kategori_kompetensi || '-'}</span></td>
+                    <td className="px-4 py-3 text-center font-medium text-slate-100 text-xs">{row.nomor_sertifikat}</td>
+                    <td className="px-4 py-3 text-center text-slate-300">{row.user?.name || '-'}</td>
+                    <td className="px-4 py-3 text-center text-slate-400 hidden md:table-cell">{row.asesmen?.judul || '-'}</td>
+                    <td className="px-4 py-3 text-center hidden md:table-cell"><span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-400">{row.level?.nama || row.kategori_kompetensi || '-'}</span></td>
                     <td className="px-4 py-3 text-center font-semibold text-slate-100">{row.nilai_akhir}</td>
-                    <td className="px-4 py-3 text-slate-400 hidden lg:table-cell">{row.tanggal_terbit}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-center text-slate-400 hidden lg:table-cell">{row.tanggal_terbit}</td>
+                    <td className="px-4 py-3 text-center"><div className="flex items-center justify-center">
                       {can(user, 'sertifikat.download') && (
                         <button onClick={() => download(row)} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/20"><Download className="h-3.5 w-3.5" />Download</button>
                       )}
-                    </td>
+                    </div></td>
                   </tr>
                 ))}
               </tbody>

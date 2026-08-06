@@ -64,10 +64,10 @@ function AuditLog() {
           <div className="flex flex-col items-center py-16 text-slate-500"><ShieldCheck className="mb-3 h-12 w-12 opacity-30" /><p className="text-sm font-medium">Belum ada riwayat aktivitas</p></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-sm">
               <thead className="text-xs uppercase tracking-wider text-slate-500">
                 <tr className="border-b border-[#262636] bg-[#09090E]">
-                  <th className="px-5 py-3.5 font-semibold">Waktu</th><th className="px-5 py-3.5 font-semibold">User</th><th className="px-5 py-3.5 font-semibold translate-x-[15px]">Aksi</th><th className="px-5 py-3.5 font-semibold">Modul</th>
+                  <th className="px-5 py-3.5 text-center font-semibold">Waktu</th><th className="px-5 py-3.5 text-center font-semibold">User</th><th className="px-5 py-3.5 text-center font-semibold">Aksi</th><th className="px-5 py-3.5 text-center font-semibold">Modul</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#262636]">
@@ -75,10 +75,10 @@ function AuditLog() {
                   const cfg = actionConfig[row.action] || { label: row.action, color: 'bg-slate-500/10 text-slate-400 ring-slate-400/20' }
                   return (
                     <tr className="transition hover:bg-white/[0.02]" key={row.id}>
-                      <td className="px-5 py-4 text-xs text-slate-400 whitespace-nowrap">{new Date(row.created_at).toLocaleString('id-ID')}</td>
-                      <td className="px-5 py-4 font-medium text-slate-100">{row.user?.name || '-'}</td>
-                      <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${cfg.color}`}>{cfg.label}</span></td>
-                      <td className="px-5 py-4 text-slate-400">{row.module}</td>
+                      <td className="px-5 py-4 text-center text-xs text-slate-400 whitespace-nowrap">{new Date(row.created_at).toLocaleString('id-ID')}</td>
+                      <td className="px-5 py-4 text-center font-medium text-slate-100">{row.user?.name || '-'}</td>
+                      <td className="px-5 py-4 text-center"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${cfg.color}`}>{cfg.label}</span></td>
+                      <td className="px-5 py-4 text-center text-slate-400">{row.module}</td>
                     </tr>
                   )
                 })}
