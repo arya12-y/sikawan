@@ -12,7 +12,7 @@ Platform pembelajaran & asesmen kompetensi Walidata Satu Data Indonesia. Alur: *
 
 | Tools | Versi | Catatan |
 |-------|-------|---------|
-| PHP | 8.2+ | Termasuk php.ini `extension=pdo_mysql`, `extension=fileinfo` |
+| PHP | 8.4+ | Termasuk php.ini `extension=pdo_mysql`, `extension=fileinfo` |
 | Composer | 2.x | — |
 | Node.js | 18+ / 20+ | Termasuk npm |
 | MySQL | 5.7+ / 8.x | Bisa pakai **Laragon** (MySQL) |

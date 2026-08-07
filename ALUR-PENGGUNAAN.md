@@ -107,7 +107,3 @@ cd backend && php artisan serve          # → http://127.0.0.1:8000
 
 # Update frontend (setelah ubah kode)
 build-copy.bat                           # build + copy ke backend/public
-
-# Export database (berbagi data)
-mysqldump -u root sikawan > sikawan.sql
-```
